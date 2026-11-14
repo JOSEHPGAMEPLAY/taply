@@ -20,23 +20,28 @@ export class PagesService {
     const business = await this.prisma.business.findUnique({ where: { id: businessId } });
     if (!business) throw new NotFoundException('Negocio no encontrado');
 
-    const page = await this.prisma.page.create({
-      data: {
-        businessId,
-        slug: dto.slug,
-        templateId: dto.templateId,
-        status: 'DRAFT',
-      },
-    });
+    // Crear página y versión inicial en una transacción
+    const page = await this.prisma.$transaction(async (tx: PrismaClient) => {
+      const page = await tx.page.create({
+        data: {
+          businessId,
+          slug: dto.slug,
+          templateId: dto.templateId,
+          status: 'DRAFT',
+        },
+      });
 
-    // Crear versión inicial
-    await this.prisma.pageVersion.create({
-      data: {
-        pageId: page.id,
-        status: 'DRAFT',
-        config: {},
-        buttons: [],
-      },
+      // Crear versión inicial
+      await tx.pageVersion.create({
+        data: {
+          pageId: page.id,
+          status: 'DRAFT',
+          config: {},
+          buttons: [],
+        },
+      });
+
+      return page;
     });
 
     return page;

@@ -7,6 +7,7 @@ import { PagesModule } from './pages/pages.module';
 import { NfcTagsModule } from './nfc-tags/nfc-tags.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { BillingModule } from './billing/billing.module';
+import { PublicModule } from './public/public.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { BillingModule } from './billing/billing.module';
     NfcTagsModule,
     AnalyticsModule,
     BillingModule,
+    PublicModule,
   ],
 })
 export class AppModule {}

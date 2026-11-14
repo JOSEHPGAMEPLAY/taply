@@ -215,7 +215,6 @@ model Page {
   business            Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
   template            Template?         @relation(fields: [templateId], references: [id], onDelete: SetNull)
   versions            PageVersion[]     @relation("PageVersions")
-  publishedVersion    PageVersion?      @relation
   tagAssignments      TagAssignment[]
   analyticsEvents     AnalyticsEvent[]
 
@@ -235,8 +234,7 @@ model PageVersion {
   updatedAt DateTime            @updatedAt
 
   // Relaciones
-  page                Page                @relation("PageVersions", fields: [pageId], references: [id], onDelete: Cascade)
-  pageAsPublishedPage Page?               @relation(fields: [id], references: [publishedVersionId], onDelete: SetNull)
+  page      Page                @relation("PageVersions", fields: [pageId], references: [id], onDelete: Cascade)
 
   @@index([pageId])
   @@map("page_versions")
