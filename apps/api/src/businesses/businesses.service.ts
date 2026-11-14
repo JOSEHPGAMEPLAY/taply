@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module';
 import { CreateBusinessDto } from './dto/create-business.dto';
@@ -83,10 +82,10 @@ export class BusinessesService {
   async findOne(id: string, ownerId: string) {
     const business = await this.prisma.business.findUnique({ where: { id } });
     if (!business) {
-      throw new Error('Negocio no encontrado');
+      throw new NotFoundException('Negocio no encontrado');
     }
     if (business.ownerId !== ownerId) {
-      throw new Error('No tienes permiso para acceder a este negocio');
+      throw new ForbiddenException('No tienes permiso para acceder a este negocio');
     }
     return business;
   }
@@ -155,10 +154,10 @@ export class BusinessesService {
   private async verifyOwnership(id: string, ownerId: string) {
     const business = await this.prisma.business.findUnique({ where: { id } });
     if (!business) {
-      throw new Error('Negocio no encontrado');
+      throw new NotFoundException('Negocio no encontrado');
     }
     if (business.ownerId !== ownerId) {
-      throw new Error('No tienes permiso para modificar este negocio');
+      throw new ForbiddenException('No tienes permiso para modificar este negocio');
     }
   }
 

@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module';
 import { CreatePageDto } from './dto/create-page.dto';
@@ -19,7 +18,7 @@ export class PagesService {
    */
   async create(businessId: string, dto: CreatePageDto) {
     const business = await this.prisma.business.findUnique({ where: { id: businessId } });
-    if (!business) throw new Error('Negocio no encontrado');
+    if (!business) throw new NotFoundException('Negocio no encontrado');
 
     const page = await this.prisma.page.create({
       data: {
@@ -59,8 +58,8 @@ export class PagesService {
    */
   async findOne(businessId: string, pageId: string) {
     const page = await this.prisma.page.findUnique({ where: { id: pageId } });
-    if (!page) throw new Error('Página no encontrada');
-    if (page.businessId !== businessId) throw new Error('No tienes permiso');
+    if (!page) throw new NotFoundException('Página no encontrada');
+    if (page.businessId !== businessId) throw new ForbiddenException('No tienes permiso');
     return page;
   }
 
@@ -95,7 +94,7 @@ export class PagesService {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!version) throw new Error('No hay versión en borrador para publicar');
+    if (!version) throw new BadRequestException('No hay versión en borrador para publicar');
 
     // Marcar versión anterior como SUPERSEDED si existe
     if (page.publishedVersionId) {
@@ -119,7 +118,7 @@ export class PagesService {
 
   private async verifyOwnership(businessId: string, pageId: string) {
     const page = await this.prisma.page.findUnique({ where: { id: pageId } });
-    if (!page) throw new Error('Página no encontrada');
-    if (page.businessId !== businessId) throw new Error('No tienes permiso');
+    if (!page) throw new NotFoundException('Página no encontrada');
+    if (page.businessId !== businessId) throw new ForbiddenException('No tienes permiso');
   }
 }

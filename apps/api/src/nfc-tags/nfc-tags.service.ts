@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module';
 import { CreateNfcTagDto } from './dto/create-nfc-tag.dto';
@@ -28,8 +27,8 @@ export class NfcTagsService {
 
   async findOne(businessId: string, tagId: string) {
     const tag = await this.prisma.nfcTag.findUnique({ where: { id: tagId } });
-    if (!tag) throw new Error('Etiqueta no encontrada');
-    if (tag.businessId !== businessId) throw new Error('No tienes permiso');
+    if (!tag) throw new NotFoundException('Etiqueta no encontrada');
+    if (tag.businessId !== businessId) throw new ForbiddenException('No tienes permiso');
     return tag;
   }
 
@@ -46,7 +45,7 @@ export class NfcTagsService {
 
   async scan(tagId: string) {
     const tag = await this.prisma.nfcTag.findUnique({ where: { id: tagId } });
-    if (!tag) throw new Error('Etiqueta no encontrada');
+    if (!tag) throw new NotFoundException('Etiqueta no encontrada');
 
     const assignment = await this.prisma.tagAssignment.findFirst({
       where: { tagId, endedAt: null },
@@ -63,7 +62,7 @@ export class NfcTagsService {
 
   private async verifyOwnership(businessId: string, tagId: string) {
     const tag = await this.prisma.nfcTag.findUnique({ where: { id: tagId } });
-    if (!tag) throw new Error('Etiqueta no encontrada');
-    if (tag.businessId !== businessId) throw new Error('No tienes permiso');
+    if (!tag) throw new NotFoundException('Etiqueta no encontrada');
+    if (tag.businessId !== businessId) throw new ForbiddenException('No tienes permiso');
   }
 }

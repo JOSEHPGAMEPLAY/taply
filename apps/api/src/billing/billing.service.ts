@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -35,7 +34,7 @@ export class BillingService {
     const business = await this.prisma.business.findUnique({
       where: { id: dto.businessId },
     });
-    if (!business) throw new Error('Negocio no encontrado');
+    if (!business) throw new NotFoundException('Negocio no encontrado');
 
     let subtotal = 0;
     const items = await Promise.all(
@@ -43,7 +42,7 @@ export class BillingService {
         const product = await this.prisma.billingProduct.findUnique({
           where: { id: item.productId },
         });
-        if (!product) throw new Error(`Producto ${item.productId} no encontrado`);
+        if (!product) throw new NotFoundException(`Producto ${item.productId} no encontrado`);
         const total = Number(product.price) * item.quantity;
         subtotal += total;
         return {

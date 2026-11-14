@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, ConflictException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -55,7 +55,7 @@ export class AuthService {
     // Verificar si el email ya existe
     const existingUser = await this.prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      throw new Error('El correo electrónico ya está registrado');
+      throw new ConflictException('El correo electrónico ya está registrado');
     }
 
     // Encriptar la contraseña con bcrypt
@@ -91,13 +91,13 @@ export class AuthService {
     // Buscar usuario por email
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
-      throw new Error('Credenciales inválidas');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     // Verificar la contraseña contra el hash almacenado
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new Error('Credenciales inválidas');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     // Generar tokens de acceso y refresco
@@ -126,7 +126,7 @@ export class AuthService {
       // Buscar el usuario asociado al token
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user) {
-        throw new Error('Usuario no encontrado');
+        throw new UnauthorizedException('Token de refresco inválido');
       }
 
       // Generar nuevo token de acceso
@@ -140,7 +140,7 @@ export class AuthService {
 
       return { accessToken };
     } catch {
-      throw new Error('Token de refresco inválido');
+      throw new UnauthorizedException('Token de refresco inválido');
     }
   }
 
@@ -154,7 +154,7 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      throw new Error('Usuario no encontrado');
+      throw new NotFoundException('Usuario no encontrado');
     }
 
     return this.sanitizeUser(user);
