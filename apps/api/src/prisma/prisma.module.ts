@@ -1,0 +1,46 @@
+import { Global, Module, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+
+/**
+ * Token inyectable para el cliente Prisma.
+ */
+export const PRISMA_CLIENT = 'PrismaClient';
+
+/**
+ * PrismaModule - Módulo global que proporciona el cliente Prisma.
+ *
+ * Sigue el principio de Responsabilidad Única (SRP):
+ * Se encarga exclusivamente de gestionar el ciclo de vida de PrismaClient.
+ *
+ * Uso: Importar en AppModule y acceder a PrismaClient vía inyección de dependencias.
+ */
+@Global()
+@Module({
+  providers: [
+    {
+      provide: PRISMA_CLIENT,
+      useFactory: () => new PrismaClient(),
+    },
+  ],
+  exports: [PRISMA_CLIENT],
+})
+export class PrismaModule implements OnModuleInit, OnModuleDestroy {
+  /**
+   * Constructor que recibe el cliente Prisma inyectado.
+   */
+  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+
+  /**
+   * Conecta a la base de datos al iniciar el módulo.
+   */
+  async onModuleInit() {
+    await this.prisma.$connect();
+  }
+
+  /**
+   * Cierra la conexión al destruir el módulo.
+   */
+  async onModuleDestroy() {
+    await this.prisma.$disconnect();
+  }
+}
