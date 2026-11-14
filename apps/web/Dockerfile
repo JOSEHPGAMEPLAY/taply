@@ -1,0 +1,25 @@
+FROM node:20-alpine
+RUN corepack enable && \
+    addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodejs
+WORKDIR /app
+
+# Copy all workspace files
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/api/ ./apps/api/
+COPY apps/web/ ./apps/web/
+COPY packages/ ./packages/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Build Next.js with standalone output
+RUN pnpm --filter @taply/web build
+
+# Production config
+ENV NODE_ENV=production
+USER nodejs
+EXPOSE 3000
+
+WORKDIR /app/apps/web/.next/standalone
+CMD ["node", "apps/web/server.js"]

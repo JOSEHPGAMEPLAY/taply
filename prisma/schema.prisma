@@ -1,0 +1,442 @@
+// Taply - Prisma Schema
+// SaaS para negocios con páginas digitales accesibles mediante NFC y QR
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum BusinessStatus {
+  PROSPECT
+  ACTIVE
+  PAUSED
+  SUSPENDED
+  CLOSED
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+enum PageVersionStatus {
+  DRAFT
+  PUBLISHED
+  SUPERSEDED
+}
+
+enum NfcTagStatus {
+  INVENTORY
+  PENDING_PROGRAMMING
+  PROGRAMMED
+  ACTIVE
+  INACTIVE
+  LOST
+  DAMAGED
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  PAST_DUE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum EntitlementStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+  EXPIRED
+}
+
+enum AnalyticsEventType {
+  PAGE_VIEW
+  BUTTON_CLICK
+  TAG_SCAN
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  PUBLISH
+  UNPUBLISH
+  ASSIGN
+  UNASSIGN
+  LOGIN
+  LOGOUT
+  PAYMENT
+  SUBSCRIPTION
+}
+
+// ============================================
+// MODELOS BASE
+// ============================================
+
+model User {
+  id             String         @id @default(uuid())
+  email          String         @unique
+  passwordHash   String
+  name           String?
+  role           UserRole       @default(USER)
+  emailVerifiedAt DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  // Relaciones
+  authSessions   AuthSession[]
+  authTokens     AuthToken[]
+  businesses     Business[]
+  auditLogs      AuditLog[]     @relation("AuditLogActor")
+
+  @@index([email])
+  @@map("users")
+}
+
+model AuthSession {
+  id           String   @id @default(uuid())
+  userId       String
+  sessionToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  // Relaciones
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionToken])
+  @@map("auth_sessions")
+}
+
+model AuthToken {
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String   @unique
+  type       String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  // Relaciones
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("auth_tokens")
+}
+
+model Business {
+  id          String         @id @default(uuid())
+  ownerId     String
+  name        String
+  slug        String         @unique
+  description String?
+  status      BusinessStatus @default(PROSPECT)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relaciones
+  owner       User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  pages       Page[]
+  nfcTags     NfcTag[]
+  orders      Order[]
+  subscriptions Subscription[]
+  entitlements BusinessEntitlement[]
+
+  @@index([ownerId])
+  @@index([slug])
+  @@map("businesses")
+}
+
+model Template {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  config      Json?
+  version     String    @default("1.0.0")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relaciones
+  pages       Page[]
+
+  @@index([name])
+  @@map("templates")
+}
+
+// ============================================
+// MODELOS DE PÁGINAS Y NFC
+// ============================================
+
+model Page {
+  id                  String            @id @default(uuid())
+  businessId          String
+  templateId          String?
+  slug                String
+  status              PageStatus        @default(DRAFT)
+  publishedVersionId  String?           @unique
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  // Relaciones
+  business            Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  template            Template?         @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  versions            PageVersion[]     @relation("PageVersions")
+  publishedVersion    PageVersion?      @relation
+  tagAssignments      TagAssignment[]
+  analyticsEvents     AnalyticsEvent[]
+
+  @@unique([businessId, slug])
+  @@index([businessId])
+  @@index([publishedVersionId])
+  @@map("pages")
+}
+
+model PageVersion {
+  id        String              @id @default(uuid())
+  pageId    String
+  status    PageVersionStatus   @default(DRAFT)
+  config    Json?
+  buttons   Json?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  // Relaciones
+  page                Page                @relation("PageVersions", fields: [pageId], references: [id], onDelete: Cascade)
+  pageAsPublishedPage Page?               @relation(fields: [id], references: [publishedVersionId], onDelete: SetNull)
+
+  @@index([pageId])
+  @@map("page_versions")
+}
+
+model NfcTag {
+  id            String        @id @default(uuid())
+  businessId    String
+  token         String        @unique
+  status        NfcTagStatus  @default(INVENTORY)
+  programmedUrl String?
+  programmedAt  DateTime?
+  verifiedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relaciones
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  assignments   TagAssignment[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@index([businessId])
+  @@index([token])
+  @@map("nfc_tags")
+}
+
+model TagAssignment {
+  id        String   @id @default(uuid())
+  tagId     String
+  pageId    String
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  createdAt DateTime @default(now())
+
+  // Relaciones
+  tag       NfcTag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([tagId])
+  @@index([pageId])
+  @@map("tag_assignments")
+}
+
+model AnalyticsEvent {
+  id        String             @id @default(uuid())
+  pageId    String
+  tagId     String?
+  type      AnalyticsEventType
+  buttonKey String?
+  metadata  Json?
+  createdAt DateTime           @default(now())
+
+  // Relaciones
+  page      Page               @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  tag       NfcTag?            @relation(fields: [tagId], references: [id], onDelete: SetNull)
+
+  @@index([pageId])
+  @@index([tagId])
+  @@index([createdAt])
+  @@map("analytics_events")
+}
+
+// ============================================
+// MODELOS DE FACTURACIÓN
+// ============================================
+
+model BillingProduct {
+  id          String            @id @default(uuid())
+  name        String
+  description String?
+  type        String            @default("ONE_TIME")
+  price       Decimal           @db.Decimal(10, 2)
+  currency    String            @default("USD")
+  interval    String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relaciones
+  orderItems  OrderItem[]
+  subscriptions Subscription[]
+
+  @@index([type])
+  @@map("billing_products")
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  businessId String
+  number     String      @unique
+  status     OrderStatus @default(DRAFT)
+  subtotal   Decimal     @db.Decimal(10, 2)
+  total      Decimal     @db.Decimal(10, 2)
+  currency   String      @default("USD")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  // Relaciones
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items      OrderItem[]
+  payments   Payment[]
+
+  @@index([businessId])
+  @@index([number])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  total      Decimal  @db.Decimal(10, 2)
+
+  // Relaciones
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    BillingProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  orderId           String
+  status            PaymentStatus @default(PENDING)
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @default("USD")
+  provider          String?
+  providerReference String?
+  eventId           String        @unique
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relaciones
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([eventId])
+  @@map("payments")
+}
+
+model Subscription {
+  id             String              @id @default(uuid())
+  businessId     String
+  productId      String
+  status         SubscriptionStatus  @default(PENDING)
+  startedAt      DateTime?
+  endsAt         DateTime?
+  nextBillingAt  DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  // Relaciones
+  business       Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product        BillingProduct      @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([businessId])
+  @@index([productId])
+  @@map("subscriptions")
+}
+
+model BusinessEntitlement {
+  id         String             @id @default(uuid())
+  businessId String
+  feature    String
+  source     String
+  sourceId   String?
+  status     EntitlementStatus  @default(ACTIVE)
+  expiresAt  DateTime?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  // Relaciones
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([feature])
+  @@map("business_entitlements")
+}
+
+// ============================================
+// MODELO DE AUDITORÍA
+// ============================================
+
+model AuditLog {
+  id        String      @id @default(uuid())
+  actorId   String?
+  entity    String
+  entityId  String?
+  action    AuditAction
+  details   Json?
+  createdAt DateTime    @default(now())
+
+  // Relaciones
+  actor     User?       @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

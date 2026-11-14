@@ -1,0 +1,12 @@
+services:
+  postgres:
+    ports: []
+    restart: unless-stopped
+
+  api:
+    volumes: []
+    restart: unless-stopped
+
+  web:
+    volumes: []
+    restart: unless-stopped
