@@ -3,7 +3,7 @@
  * Maneja tokens JWT, interceptores de error y serialización.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://api:3001/api/v1';
 
 /**
  * Obtiene el token de acceso del localStorage.
