@@ -27,16 +27,23 @@ RUN corepack enable && \
     adduser --system --uid 1001 nodejs
 WORKDIR /app
 
-# Copy only necessary files from builder
-COPY --from=builder --chown=nodejs:nodejs /app/apps/api/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package.json ./package.json
-COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+# Copy workspace structure needed for pnpm
+COPY pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json ./package.json
+COPY packages/ ./packages/
+COPY prisma/ ./prisma/
+COPY apps/api/ ./apps/api/
+
+# Install only production dependencies with proper symlinks
+RUN pnpm install --frozen-lockfile --filter @taply/api...
+
+# Generate Prisma Client for production
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Production config
 ENV NODE_ENV=production
 USER nodejs
 EXPOSE 3001
 
-WORKDIR /app
+WORKDIR /app/apps/api
 CMD ["node", "dist/main"]
