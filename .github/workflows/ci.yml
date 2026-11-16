@@ -63,6 +63,8 @@ jobs:
 
       - name: Validate Prisma schema
         run: pnpm db:validate
+        env:
+          DATABASE_URL: postgresql://taply_user:test_password@localhost:5432/taply_test?schema=public
 
       - name: Build API
         run: pnpm --filter @taply/api build
