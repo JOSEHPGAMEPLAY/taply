@@ -27,11 +27,6 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 # 4. El standalone output copia solo lo necesario en .next/standalone/
 RUN pnpm --filter @taply/web build
 
-# Next.js standalone output does NOT include .next/static/ (CSS, JS bundles, images).
-# Copy static assets to the standalone directory so the server can serve them.
-# This is done INSIDE the container, not from the host.
-RUN cp -r /app/apps/web/.next/static /app/apps/web/.next/standalone/apps/web/.next/static
-
 # Stage 2: Production
 FROM node:24-alpine AS production
 RUN corepack enable && \
@@ -39,8 +34,17 @@ RUN corepack enable && \
     adduser --system --uid 1001 nodejs
 WORKDIR /app
 
-# Copy only necessary files from builder
-COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/standalone ./
+# Copy workspace structure needed for pnpm
+COPY pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json ./package.json
+COPY packages/ ./packages/
+COPY apps/web/ ./apps/web/
+
+# Install only production dependencies with proper symlinks
+RUN pnpm install --frozen-lockfile --filter @taply/web...
+
+# Copy built Next.js standalone output from builder
+COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/standalone ./apps/web/.next/standalone
 COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nodejs:nodejs /app/apps/web/public ./apps/web/public
 
@@ -49,4 +53,6 @@ ENV NODE_ENV=production
 USER nodejs
 EXPOSE 3000
 
-CMD ["node", "apps/web/server.js"]
+# Next.js standalone output requires running the server.js directly,
+# not 'next start' which is incompatible with output: standalone.
+CMD ["node", "apps/web/.next/standalone/apps/web/server.js"]
