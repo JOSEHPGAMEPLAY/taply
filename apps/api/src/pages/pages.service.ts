@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
@@ -109,7 +109,7 @@ export class PagesService {
       if (draftVersion) {
         await this.prisma.pageVersion.update({
           where: { id: draftVersion.id },
-          data: { buttons: dto.buttons },
+          data: { buttons: dto.buttons as any },
         });
       }
     }

@@ -1,12 +1,64 @@
+# Override para producción — usar con: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Diferencias con desarrollo:
+# - PostgreSQL no expuesto al host
+# - Sin volúmenes de código montados
+# - Límites de CPU y memoria
+# - Rotación de logs
+# - Reinicio automático
+
 services:
   postgres:
-    ports: []
+    ports: []  # No exponer PostgreSQL al host en producción
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   api:
-    volumes: []
+    volumes: []  # Sin volúmenes de código en producción
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    environment:
+      NODE_ENV: production
 
   web:
-    volumes: []
+    volumes: []  # Sin volúmenes de código en producción
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    environment:
+      NODE_ENV: production

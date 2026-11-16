@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto';
 
@@ -26,5 +26,21 @@ export class AnalyticsService {
     }, {} as Record<string, number>);
 
     return { pageId: dto.pageId, total: events.length, byType: stats };
+  }
+
+  /**
+   * Elimina eventos AnalyticsEvent mayores a N meses de retención.
+   * Por defecto elimina eventos mayores a 12 meses según la política del plan maestro.
+   * Retorna la cantidad de eventos eliminados.
+   */
+  async pruneEvents(retentionMonths: number = 12) {
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - retentionMonths);
+
+    const result = await this.prisma.analyticsEvent.deleteMany({
+      where: { createdAt: { lt: cutoffDate } },
+    });
+
+    return { deleted: result.count, retentionMonths, cutoffDate: cutoffDate.toISOString() };
   }
 }

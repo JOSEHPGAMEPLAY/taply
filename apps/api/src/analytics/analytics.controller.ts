@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Delete, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto';
@@ -31,5 +31,21 @@ export class AnalyticsController {
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   async getStats(@Query() dto: AnalyticsQueryDto) {
     return this.analyticsService.getStats(dto);
+  }
+
+  @Delete('events/prune')
+  @ApiOperation({
+    summary: 'Eliminar eventos antiguos',
+    description: 'Elimina eventos AnalyticsEvent mayores a N meses. Por defecto 12 meses. Solo accesible con JWT.',
+  })
+  @ApiQuery({ name: 'months', required: false, type: Number, description: 'Meses de retención (default: 12)' })
+  @ApiResponse({ status: 200, description: 'Eventos eliminados exitosamente' })
+  @ApiResponse({ status: 400, description: 'Meses inválidos' })
+  async pruneEvents(@Query('months') months?: string) {
+    const retentionMonths = months ? parseInt(months, 10) : 12;
+    if (isNaN(retentionMonths) || retentionMonths < 0 || retentionMonths > 60) {
+      throw new BadRequestException('Meses debe ser un número entre 0 y 60');
+    }
+    return this.analyticsService.pruneEvents(retentionMonths);
   }
 }
