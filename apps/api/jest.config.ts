@@ -9,8 +9,10 @@ import type { Config } from 'jest';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
-// Cargar variables de entorno desde .env del proyecto
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Solo cargar .env si DATABASE_URL no está ya definida (CI ya lo proporciona)
+if (!process.env.DATABASE_URL) {
+  dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+}
 
 // Para pruebas locales, usar localhost:5433 (puerto expuesto por Docker) en lugar de postgres:5432
 if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('@postgres:')) {
