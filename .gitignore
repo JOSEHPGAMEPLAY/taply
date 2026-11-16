@@ -1,7 +1,11 @@
 # Dependencies
 node_modules/
-package-lock.json
 npm-debug.log*
+
+# Lock files - root is ignored, but apps/ lock files are versioned for Docker builds
+/package-lock.json
+!apps/api/package-lock.json
+!apps/web/package-lock.json
 
 # Build outputs
 dist/
