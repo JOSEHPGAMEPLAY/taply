@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Shield,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,6 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/app/pages', label: 'Páginas', icon: FileText },
     { href: '/app/nfc-tags', label: 'NFC Tags', icon: Radio },
     { href: '/app/analytics', label: 'Analíticas', icon: BarChart3 },
+    ...(user?.role === 'ADMIN' ? [{ href: '/app/admin/users', label: 'Usuarios', icon: Shield }] : []),
   ];
 
   return (

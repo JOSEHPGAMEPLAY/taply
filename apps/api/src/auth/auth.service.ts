@@ -71,7 +71,7 @@ export class AuthService {
     });
 
     // Generar tokens para el usuario recién registrado
-    const tokens = await this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
 
     return {
       user: this.sanitizeUser(user),
@@ -101,7 +101,7 @@ export class AuthService {
     }
 
     // Generar tokens de acceso y refresco
-    const tokens = await this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
 
     return {
       user: this.sanitizeUser(user),
@@ -131,7 +131,7 @@ export class AuthService {
 
       // Generar nuevo token de acceso
       const accessToken = this.jwtService.sign(
-        { sub: user.id, email: user.email },
+        { sub: user.id, email: user.email, role: user.role },
         {
           secret: this.jwtSecret,
           expiresIn: this.jwtExpiration as any,
@@ -165,19 +165,20 @@ export class AuthService {
    *
    * @param userId - ID del usuario
    * @param email - Correo electrónico del usuario
+   * @param role - Rol del usuario (ADMIN o USER)
    * @returns Objeto con accessToken y refreshToken
    */
-  private async generateTokens(userId: string, email: string) {
+  private async generateTokens(userId: string, email: string, role: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
-        { sub: userId, email },
+        { sub: userId, email, role },
         {
           secret: this.jwtSecret,
           expiresIn: this.jwtExpiration as any,
         },
       ),
       this.jwtService.signAsync(
-        { sub: userId, email },
+        { sub: userId, email, role },
         {
           secret: this.refreshSecret,
           expiresIn: this.refreshExpiration as any,

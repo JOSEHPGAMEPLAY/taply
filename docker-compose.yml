@@ -35,6 +35,8 @@ services:
       REFRESH_SECRET: ${REFRESH_SECRET:-taply-dev-refresh-secret-change-in-production}
       REFRESH_EXPIRATION: ${REFRESH_EXPIRATION:-7d}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
       - "3001:3001"
     depends_on:

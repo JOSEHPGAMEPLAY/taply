@@ -347,4 +347,38 @@ export const api = {
   async recordEvent(data: { type: 'PAGE_VIEW' | 'BUTTON_CLICK' | 'TAG_SCAN'; pageId: string; tagId?: string; buttonKey?: string; metadata?: Record<string, unknown> }) {
     return apiRequest<unknown>('POST', '/public/analytics/events', data);
   },
+
+  // ==========================================
+  // Admin — Solo accesible con rol ADMIN
+  // ==========================================
+
+  /**
+   * GET /admin/users (requiere JWT + rol ADMIN)
+   * Response: Array de usuarios
+   */
+  async getAdminUsers() {
+    return apiRequest<Array<{ id: string; email: string; name: string; role: string; createdAt: string }>>('GET', '/admin/users');
+  },
+
+  /**
+   * PATCH /admin/users/:id/role (requiere JWT + rol ADMIN)
+   * Body: { role: 'ADMIN' | 'USER' }
+   */
+  async updateUserRole(id: string, role: string) {
+    return apiRequest<unknown>('PATCH', `/admin/users/${id}/role`, { role });
+  },
+
+  /**
+   * DELETE /admin/users/:id (requiere JWT + rol ADMIN)
+   */
+  async deleteUser(id: string) {
+    return apiRequest<unknown>('DELETE', `/admin/users/${id}`);
+  },
+
+  /**
+   * GET /admin/users/stats (requiere JWT + rol ADMIN)
+   */
+  async getAdminStats() {
+    return apiRequest<{ total: number; admins: number; users: number; latestUserAt: string | null }>('GET', '/admin/users/stats');
+  },
 };

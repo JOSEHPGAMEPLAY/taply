@@ -10,6 +10,7 @@ import { BillingModule } from './billing/billing.module';
 import { PublicModule } from './public/public.module';
 import { QrModule } from './qr/qr.module';
 import { AuditModule } from './audit/audit.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AuditModule } from './audit/audit.module';
     PublicModule,
     QrModule,
     AuditModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

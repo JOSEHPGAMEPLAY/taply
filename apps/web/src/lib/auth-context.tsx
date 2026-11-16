@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
  */
 
 interface AuthContextType {
-  user: { id: string; email: string; name: string } | null;
+  user: { id: string; email: string; name: string; role: string } | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -22,7 +22,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
  * Proveedor del contexto de autenticación.
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<{ id: string; email: string; name: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; email: string; name: string; role: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   /**
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await api.login({ email, password });
     localStorage.setItem('accessToken', result.accessToken);
     localStorage.setItem('refreshToken', result.refreshToken);
-    setUser(result.user as { id: string; email: string; name: string });
+    setUser(result.user as { id: string; email: string; name: string; role: string });
   }, []);
 
   /**
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await api.register({ email, password, name });
     localStorage.setItem('accessToken', result.accessToken);
     localStorage.setItem('refreshToken', result.refreshToken);
-    setUser(result.user as { id: string; email: string; name: string });
+    setUser(result.user as { id: string; email: string; name: string; role: string });
   }, []);
 
   /**
