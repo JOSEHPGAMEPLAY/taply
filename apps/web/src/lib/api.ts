@@ -183,8 +183,9 @@ export const api = {
    * GET /pages?businessId=<uuid> (requiere JWT)
    * Response: Array de páginas del negocio
    */
-  async getPages(businessId: string) {
-    return apiRequest<unknown[]>('GET', `/pages?businessId=${businessId}`);
+  async getPages(businessId?: string) {
+    const query = businessId ? `?businessId=${businessId}` : '';
+    return apiRequest<unknown[]>('GET', `/pages${query}`);
   },
 
   /**
@@ -239,8 +240,9 @@ export const api = {
    * GET /nfc-tags?businessId=<uuid> (requiere JWT)
    * Response: Array de etiquetas del negocio
    */
-  async getNfcTags(businessId: string) {
-    return apiRequest<unknown[]>('GET', `/nfc-tags?businessId=${businessId}`);
+  async getNfcTags(businessId?: string) {
+    const query = businessId ? `?businessId=${businessId}` : '';
+    return apiRequest<unknown[]>('GET', `/nfc-tags${query}`);
   },
 
   /**

@@ -39,11 +39,11 @@ export class PagesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar páginas', description: 'Retorna todas las páginas de un negocio. Requiere businessId como query param.' })
-  @ApiQuery({ name: 'businessId', required: true, type: String, description: 'ID del negocio' })
+  @ApiOperation({ summary: 'Listar páginas', description: 'Retorna todas las páginas. Si businessId está vacío, retorna las páginas de todos los negocios del usuario.' })
+  @ApiQuery({ name: 'businessId', required: false, type: String, description: 'ID del negocio (opcional)' })
   @ApiResponse({ status: 200, description: 'Lista de páginas' })
   async findAll(@Request() request: any, @Query('businessId') businessId: string) {
-    return this.pagesService.findAll(businessId);
+    return this.pagesService.findAll(businessId || '', request.user?.sub);
   }
 
   @Get(':id')

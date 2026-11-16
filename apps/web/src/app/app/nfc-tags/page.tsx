@@ -67,10 +67,11 @@ export default function NfcTagsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      const bizFilter = filterBusinessId || undefined;
       const [bizData, tagsData, pagesData] = await Promise.all([
         api.getBusinesses().catch(() => []),
-        api.getNfcTags(filterBusinessId).catch(() => []),
-        api.getPages('').catch(() => []),
+        api.getNfcTags(bizFilter).catch(() => []),
+        api.getPages().catch(() => []),
       ]);
 
       setBusinesses((Array.isArray(bizData) ? bizData : []) as Business[]);

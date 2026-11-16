@@ -37,11 +37,11 @@ export class NfcTagsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar etiquetas NFC', description: 'Retorna todas las etiquetas de un negocio. Requiere businessId como query param.' })
-  @ApiQuery({ name: 'businessId', required: true, type: String, description: 'ID del negocio' })
+  @ApiOperation({ summary: 'Listar etiquetas NFC', description: 'Retorna todas las etiquetas. Si businessId está vacío, retorna las etiquetas de todos los negocios del usuario.' })
+  @ApiQuery({ name: 'businessId', required: false, type: String, description: 'ID del negocio (opcional)' })
   @ApiResponse({ status: 200, description: 'Lista de etiquetas' })
-  async findAll(@Query('businessId') businessId: string) {
-    return this.nfcTagsService.findAll(businessId);
+  async findAll(@Request() request: any, @Query('businessId') businessId: string) {
+    return this.nfcTagsService.findAll(businessId || '', request.user?.sub);
   }
 
   @Get(':id')

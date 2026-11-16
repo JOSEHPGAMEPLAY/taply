@@ -28,8 +28,8 @@ export default function DashboardPage() {
       try {
         const [businesses, pages, tags] = await Promise.all([
           api.getBusinesses().catch(() => []),
-          api.getPages('').catch(() => []),
-          api.getNfcTags('').catch(() => []),
+          api.getPages().catch(() => []),
+          api.getNfcTags().catch(() => []),
         ]);
 
         if (!cancelled) {

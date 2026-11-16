@@ -48,7 +48,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const loadPages = async () => {
       try {
-        const data = await api.getPages('').catch(() => []);
+        const data = await api.getPages().catch(() => []);
         const pagesList = (Array.isArray(data) ? data : []) as Page[];
         setPages(pagesList);
         if (pagesList.length > 0 && pagesList[0]) {

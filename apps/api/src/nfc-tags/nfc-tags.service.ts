@@ -18,9 +18,21 @@ export class NfcTagsService {
     });
   }
 
-  async findAll(businessId: string) {
+  async findAll(businessId: string, userId: string) {
+    if (businessId) {
+      const business = await this.prisma.business.findUnique({ where: { id: businessId } });
+      if (!business || business.ownerId !== userId) {
+        throw new ForbiddenException('No tienes permiso para ver este negocio');
+      }
+      return this.prisma.nfcTag.findMany({
+        where: { businessId },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+    const businesses = await this.prisma.business.findMany({ where: { ownerId: userId } });
+    const businessIds = businesses.map((b) => b.id);
     return this.prisma.nfcTag.findMany({
-      where: { businessId },
+      where: { businessId: { in: businessIds } },
       orderBy: { createdAt: 'desc' },
     });
   }

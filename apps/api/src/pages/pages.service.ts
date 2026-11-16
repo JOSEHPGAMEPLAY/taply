@@ -57,11 +57,27 @@ export class PagesService {
   }
 
   /**
-   * Lista todas las páginas de un negocio.
+   * Lista todas las páginas. Si businessId está vacío, retorna todas las páginas
+   * de los negocios del usuario autenticado (filtrado por ownerId en el controller).
    */
-  async findAll(businessId: string) {
+  async findAll(businessId: string, userId: string) {
+    if (businessId) {
+      // Verificar que el negocio pertenece al usuario
+      const business = await this.prisma.business.findUnique({ where: { id: businessId } });
+      if (!business || business.ownerId !== userId) {
+        throw new ForbiddenException('No tienes permiso para ver este negocio');
+      }
+      return this.prisma.page.findMany({
+        where: { businessId },
+        orderBy: { createdAt: 'desc' },
+        include: { versions: true },
+      });
+    }
+    // Sin filtro: retornar páginas de todos los negocios del usuario
+    const businesses = await this.prisma.business.findMany({ where: { ownerId: userId } });
+    const businessIds = businesses.map((b) => b.id);
     return this.prisma.page.findMany({
-      where: { businessId },
+      where: { businessId: { in: businessIds } },
       orderBy: { createdAt: 'desc' },
       include: { versions: true },
     });

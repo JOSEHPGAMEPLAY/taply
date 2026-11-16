@@ -71,9 +71,10 @@ export default function PagesPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      const bizFilter = filterBusinessId || undefined;
       const [bizData, pagesData] = await Promise.all([
         api.getBusinesses().catch(() => []),
-        api.getPages(filterBusinessId).catch(() => []),
+        api.getPages(bizFilter).catch(() => []),
       ]);
 
       const biz = (Array.isArray(bizData) ? bizData : []) as Business[];
