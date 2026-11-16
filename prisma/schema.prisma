@@ -217,6 +217,7 @@ model Page {
   versions            PageVersion[]     @relation("PageVersions")
   tagAssignments      TagAssignment[]
   analyticsEvents     AnalyticsEvent[]
+  qrCodes             QrCode[]
 
   @@unique([businessId, slug])
   @@index([businessId])
@@ -295,6 +296,19 @@ model AnalyticsEvent {
   @@index([tagId])
   @@index([createdAt])
   @@map("analytics_events")
+}
+
+model QrCode {
+  id        String   @id @default(uuid())
+  pageId    String   @unique
+  dataUrl   String   @db.Text
+  createdAt DateTime @default(now())
+
+  // Relaciones
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@map("qr_codes")
 }
 
 // ============================================
