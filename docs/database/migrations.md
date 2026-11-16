@@ -16,27 +16,31 @@ El esquema Prisma se encuentra en `prisma/schema.prisma` y contiene:
 ### Desarrollo
 
 ```bash
+cd apps/api
+
 # Validar el esquema
-pnpm db:validate
+npx prisma validate
 
 # Generar Prisma Client
-pnpm db:generate
+npx prisma generate
 
 # Crear y aplicar una nueva migración
-pnpm db:migrate
+npx prisma migrate dev
 
 # Abrir Prisma Studio (UI para explorar datos)
-pnpm db:studio
+npx prisma studio
 
 # Ejecutar el seed
-pnpm db:seed
+npx tsx prisma/seed.ts
 ```
 
 ### Producción
 
 ```bash
+cd apps/api
+
 # Aplicar migraciones existentes (sin crear nuevas)
-pnpm db:deploy
+npx prisma migrate deploy
 ```
 
 ## Restricciones SQL personalizadas

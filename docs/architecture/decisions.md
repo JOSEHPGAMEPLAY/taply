@@ -12,15 +12,15 @@
 - Se puede escalar verticalmente antes de necesitar horizontalmente.
 - Si un módulo crece demasiado, se puede extraer a un microservicio en el futuro.
 
-### 2. Monorepo con pnpm workspace
+### 2. Proyectos independientes en un solo repositorio
 
-**Decisión**: Frontend y backend en un solo repositorio con pnpm workspaces.
+**Decisión**: Frontend y backend son proyectos independientes con npm, cada uno con su propio package.json, node_modules, y configuración.
 
 **Rationale**:
-- Frontend y backend comparten configuración (TypeScript, ESLint) y tipos.
-- Los cambios en la API y el frontend se coordinan en el mismo commit.
-- pnpm es más rápido y eficiente en disco que npm o yarn.
-- Docker Compose puede construir ambos servicios desde el mismo contexto.
+- Cada app se despliega por separado (API en Render, Web en Vercel).
+- Sin dependencias cruzadas: cada app gestiona sus propias dependencias.
+- Dockerfiles más simples: cada imagen contiene solo lo que necesita.
+- npm es universal y no requiere configuración adicional.
 
 ### 3. Prisma como ORM
 
@@ -38,7 +38,7 @@
 
 **Rationale**:
 - Entorno reproducible: cualquier desarrollador puede levantar el proyecto con un comando.
-- Sin dependencias del host: no se necesita instalar Node.js, PostgreSQL o pnpm localmente.
+- Sin dependencias del host: no se necesita instalar Node.js o PostgreSQL localmente.
 - Preparado para producción: la misma configuración se usa en desarrollo y despliegue.
 - Healthchecks integrados: Docker puede verificar la salud de los servicios.
 

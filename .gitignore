@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
-.pnpm-store/
+package-lock.json
+npm-debug.log*
 
 # Build outputs
 dist/
@@ -31,16 +32,15 @@ desktop.ini
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 
 # Testing
 coverage/
 .nyc_output/
 
-# Prisma
+# Prisma (inside apps/api)
 # Note: migrations/ MUST be versioned, not ignored
-prisma/dev.db
-prisma/dev.db-journal
+apps/api/prisma/dev.db
+apps/api/prisma/dev.db-journal
 
 # Docker
 docker-compose.local.*.yml

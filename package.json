@@ -2,35 +2,12 @@
   "name": "taply",
   "private": true,
   "scripts": {
-    "dev": "pnpm --parallel dev",
-    "build": "pnpm --recursive --parallel build",
-    "lint": "pnpm --recursive lint",
-    "test": "pnpm --recursive test",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
-    "docker:build": "docker compose build",
-    "db:generate": "pnpm --filter @taply/api prisma generate",
-    "db:validate": "pnpm --filter @taply/api prisma validate",
-    "db:format": "pnpm --filter @taply/api prisma format",
-    "db:migrate": "pnpm --filter @taply/api prisma migrate dev",
-    "db:deploy": "pnpm --filter @taply/api prisma migrate deploy",
-    "db:seed": "pnpm --filter @taply/api prisma db seed",
-    "db:studio": "pnpm --filter @taply/api prisma studio"
-  },
-  "devDependencies": {
-    "@nestjs/cli": "^11.0.0",
-    "@taply/eslint-config": "workspace:*",
-    "@taply/typescript-config": "workspace:*",
-    "prisma": "6.19.3"
+    "docker:build": "docker compose build"
   },
   "engines": {
-    "node": ">=24.0.0",
-    "pnpm": ">=10.0.0"
-  },
-  "packageManager": "pnpm@10.4.1",
-  "dependencies": {
-    "@prisma/client": "6.19.3",
-    "tsx": "^4.23.15"
+    "node": ">=24.0.0"
   }
 }

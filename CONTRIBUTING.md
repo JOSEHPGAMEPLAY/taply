@@ -2,7 +2,7 @@
 
 ## 📋 Estrategia de Ramas Git
 
-Taply utiliza un flujo de trabajo basado en **feature branches** sobre un monorepo con pnpm workspace. Esta estrategia mantiene frontend y backend sincronizados y evita conflictos de merge.
+Taply utiliza un flujo de trabajo basado en **feature branches**. El proyecto tiene dos aplicaciones independientes (API y Web) que se desarrollan por separado pero se coordinan en el mismo repositorio.
 
 ### Ramas Principales
 
@@ -103,7 +103,7 @@ docs/deployment-guide
 3. **Mantén tu rama actualizada** — Rebase periódicamente sobre `main`.
 4. **Commits limpios** — Usa mensajes descriptivos y Convention Commits.
 5. **No subas secretos** — Verifica que `.env`, claves API y contraseñas no estén en commits.
-6. **Prueba antes de push** — Asegúrate que `pnpm build` y `docker compose up` funcionen.
+6. **Prueba antes de push** — Asegúrate que `npm run build` y `docker compose up` funcionen en cada app.
 
 ### Resolución de Conflictos
 
@@ -132,4 +132,4 @@ git branch -d feature/nombre-de-la-feature
 
 ---
 
-> 💡 **Recuerda:** En un monorepo, frontend y backend se desarrollan juntos. Una feature que afecta ambos debe estar en la misma rama y commit.
+> 💡 **Recuerda:** API y Web son proyectos independientes. Una feature que afecta ambos debe estar en la misma rama, pero cada app se instala y compila por separado con npm.

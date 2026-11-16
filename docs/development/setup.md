@@ -3,7 +3,7 @@
 ## Requisitos
 
 - **Docker Desktop**: Instalado y en ejecución.
-- **pnpm**: `npm install -g pnpm` (si quieres ejecutar comandos fuera de Docker).
+- **Node.js**: Versión 24 o superior (si quieres ejecutar comandos fuera de Docker).
 - **Git**: Para clonar el repositorio.
 
 ## Clonar el repositorio
@@ -15,8 +15,14 @@ cd taply
 
 ## Instalar dependencias
 
+Cada app tiene sus propias dependencias:
+
 ```bash
-pnpm install
+# API
+cd apps/api && npm install
+
+# Web
+cd apps/web && npm install
 ```
 
 ## Configurar variables de entorno
@@ -58,19 +64,21 @@ curl http://localhost:3001/api/v1/health/ready
 
 | Comando | Descripción |
 |---|---|
-| `pnpm dev` | Iniciar frontend y backend en modo desarrollo |
-| `pnpm build` | Compilar frontend y backend |
-| `pnpm lint` | Ejecutar ESLint |
-| `pnpm test` | Ejecutar pruebas |
-| `pnpm docker:up` | Levantar contenedores Docker |
-| `pnpm docker:down` | Detener contenedores Docker |
-| `pnpm docker:logs` | Ver logs de contenedores |
-| `pnpm docker:build` | Reconstruir imágenes Docker |
-| `pnpm db:generate` | Generar Prisma Client |
-| `pnpm db:validate` | Validar esquema Prisma |
-| `pnpm db:migrate` | Ejecutar migraciones |
-| `pnpm db:seed` | Ejecutar seed de datos |
-| `pnpm db:studio` | Abrir Prisma Studio |
+| `cd apps/api && npm run dev` | Iniciar API en modo desarrollo |
+| `cd apps/web && npm run dev` | Iniciar Web en modo desarrollo |
+| `cd apps/api && npm run build` | Compilar API |
+| `cd apps/web && npm run build` | Compilar Web |
+| `cd apps/api && npm run lint` | Ejecutar ESLint en API |
+| `cd apps/api && npm run test` | Ejecutar pruebas del API |
+| `npm run docker:up` | Levantar contenedores Docker |
+| `npm run docker:down` | Detener contenedores Docker |
+| `npm run docker:logs` | Ver logs de contenedores |
+| `npm run docker:build` | Reconstruir imágenes Docker |
+| `cd apps/api && npx prisma generate` | Generar Prisma Client |
+| `cd apps/api && npx prisma validate` | Validar esquema Prisma |
+| `cd apps/api && npx prisma migrate dev` | Ejecutar migraciones |
+| `cd apps/api && npx tsx prisma/seed.ts` | Ejecutar seed de datos |
+| `cd apps/api && npx prisma studio` | Abrir Prisma Studio |
 
 ## Detener el entorno
 

@@ -2,7 +2,7 @@
 
 ## Visión general
 
-Taply es una plataforma SaaS monolítica modular que permite a los negocios crear páginas digitales accesibles mediante etiquetas NFC y códigos QR. La arquitectura sigue el patrón **monolito modular** con separación clara entre frontend y backend, compartiendo configuración a través de un monorepo gestionado con pnpm.
+Taply es una plataforma SaaS monolítica modular que permite a los negocios crear páginas digitales accesibles mediante etiquetas NFC y códigos QR. La arquitectura sigue el patrón **monolito modular** con separación clara entre frontend y backend, cada uno como proyecto independiente con npm.
 
 ## Diagrama de componentes
 
@@ -52,7 +52,7 @@ Taply es una plataforma SaaS monolítica modular que permite a los negocios crea
 | ORM | Prisma | 6.x |
 | Estilos | Tailwind CSS | 3.x |
 | Componentes UI | shadcn/ui | — |
-| Paquetes | pnpm | 9.x |
+| Gestor de paquetes | npm | — |
 | Contenedores | Docker + Docker Compose | — |
 | Lenguaje | TypeScript | 5.x |
 | Documentación API | Swagger / OpenAPI | — |
@@ -78,7 +78,7 @@ Taply es una plataforma SaaS monolítica modular que permite a los negocios crea
 
 - **Monolito modular**: Un solo proceso que contiene módulos bien delimitados. Cada módulo tiene su propio controller, service y DTOs.
 - **Separación frontend/backend**: Next.js y NestJS son aplicaciones independientes que se comunican vía REST.
-- **Monorepo pnpm**: Configuración compartida (TypeScript, ESLint) y dependencias centralizadas.
+- **Proyectos independientes**: API y Web son proyectos npm independientes, cada uno con sus propias dependencias y configuración.
 - **Docker-first**: El entorno se levanta con `docker compose up --build`. No hay dependencias del host.
 - **Prisma como fuente de verdad**: El esquema de base de datos se define en `prisma/schema.prisma` y se migra de forma versionada.
 - **SOLID y Clean Code**: Cada módulo sigue los principios SOLID, con inyección de dependencias, responsabilidad única y código documentado.

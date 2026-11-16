@@ -3,7 +3,7 @@
 ## Requisitos
 
 - Docker Desktop instalado y en ejecución
-- pnpm (se instala automáticamente con `corepack enable`)
+- Node.js 24+ (opcional, para desarrollo fuera de Docker)
 
 ## Iniciar el entorno
 

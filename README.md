@@ -101,7 +101,7 @@
 | **ORM** | Prisma | 6 |
 | **Estilos** | Tailwind CSS | 4 |
 | **Componentes UI** | shadcn/ui | — |
-| **Gestor de paquetes** | pnpm | 9 |
+| **Gestor de paquetes** | npm | — |
 | **Contenedores** | Docker | — |
 | **Orquestación** | Docker Compose | — |
 | **Lenguaje** | TypeScript | 5 |
@@ -141,7 +141,6 @@ taply/
 ### Requisitos
 
 - **Docker Desktop** instalado y en ejecución
-- **pnpm** (gestor de paquetes)
 
 ### Instalación
 
@@ -150,8 +149,11 @@ taply/
 git clone https://github.com/JOSEHPGAMEPLAY/taply.git
 cd taply
 
-# Instalar dependencias
-pnpm install
+# Instalar dependencias del API
+cd apps/api && npm install
+
+# Instalar dependencias del Web
+cd apps/web && npm install
 ```
 
 ### Ejecutar con Docker
@@ -170,16 +172,16 @@ docker compose up --build
 
 | Comando | Descripción |
 |---|---|
-| `pnpm dev` | Iniciar modo desarrollo |
-| `pnpm build` | Compilar frontend y backend |
-| `pnpm lint` | Ejecutar linter |
-| `pnpm test` | Ejecutar pruebas |
-| `pnpm docker:up` | Levantar contenedores |
-| `pnpm docker:down` | Detener contenedores |
-| `pnpm docker:logs` | Ver logs de contenedores |
-| `pnpm db:migrate` | Aplicar migraciones de base de datos |
-| `pnpm db:seed` | Ejecutar seed de datos |
-| `pnpm db:studio` | Abrir Prisma Studio |
+| `npm run docker:up` | Levantar contenedores (API + Web + DB) |
+| `npm run docker:down` | Detener contenedores |
+| `npm run docker:logs` | Ver logs de contenedores |
+| `cd apps/api && npm run dev` | Iniciar API en desarrollo |
+| `cd apps/web && npm run dev` | Iniciar Web en desarrollo |
+| `cd apps/api && npm run build` | Compilar API |
+| `cd apps/web && npm run build` | Compilar Web |
+| `cd apps/api && npm run test` | Ejecutar pruebas del API |
+| `cd apps/api && npx prisma migrate dev` | Aplicar migraciones |
+| `cd apps/api && npx prisma studio` | Abrir Prisma Studio |
 
 ---
 
@@ -227,16 +229,16 @@ El esquema Prisma incluye **17 modelos** y **11 enums** que cubren:
 
 ```bash
 # Generar cliente Prisma
-pnpm db:generate
+cd apps/api && npx prisma generate
 
 # Validar esquema
-pnpm db:validate
+cd apps/api && npx prisma validate
 
 # Aplicar migraciones
-pnpm db:migrate
+cd apps/api && npx prisma migrate dev
 
 # Abrir Prisma Studio
-pnpm db:studio
+cd apps/api && npx prisma studio
 ```
 
 ---
@@ -274,7 +276,7 @@ pnpm db:studio
 
 | Fase | Descripción | Estado |
 |---|---|---|
-| ✅ **Fase 1** | Monorepo y scaffold | Completada |
+| ✅ **Fase 1** | Proyectos independientes y scaffold | Completada |
 | ✅ **Fase 2** | Docker e infraestructura | Completada |
 | ✅ **Fase 3** | Esquema Prisma y migraciones | Completada |
 | 🔄 **Fase 4** | Autenticación y usuarios | En progreso |

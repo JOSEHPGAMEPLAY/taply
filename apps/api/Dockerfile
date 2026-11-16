@@ -5,20 +5,19 @@ RUN corepack enable && \
     adduser --system --uid 1001 nodejs
 WORKDIR /app
 
-# Copy workspace configuration files first for better caching
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-COPY packages/ ./packages/
-COPY prisma/ ./prisma/
-COPY apps/api/ ./apps/api/
+# Copy package files first for better caching
+COPY package.json package-lock.json* ./
+# Copy source code
+COPY . .
 
-# Install all workspace dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies
+RUN npm install
 
 # Generate Prisma Client
-RUN npx prisma generate --schema=./prisma/schema.prisma
+RUN npx prisma generate
 
 # Build the API
-RUN pnpm --filter @taply/api build
+RUN npm run build
 
 # Stage 2: Production
 FROM node:24-alpine AS production
@@ -27,26 +26,20 @@ RUN corepack enable && \
     adduser --system --uid 1001 nodejs
 WORKDIR /app
 
-# Copy workspace structure for pnpm dependency resolution
-COPY pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY package.json ./package.json
-COPY packages/ ./packages/
-COPY prisma/ ./prisma/
-COPY apps/api/ ./apps/api/
+# Copy built code from builder
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 
-# Install dependencies with proper pnpm symlinks
-RUN pnpm install --frozen-lockfile --filter @taply/api...
+# Install production dependencies only
+RUN npm install --omit=dev
 
 # Generate Prisma Client for production runtime
-RUN npx prisma generate --schema=./prisma/schema.prisma
-
-# Copy the built dist folder from the builder stage
-COPY --from=builder --chown=nodejs:nodejs /app/apps/api/dist ./apps/api/dist
+RUN npx prisma generate
 
 # Production config
 ENV NODE_ENV=production
 USER nodejs
 EXPOSE 3001
 
-WORKDIR /app/apps/api
 CMD ["node", "dist/main"]
