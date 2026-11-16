@@ -30,7 +30,7 @@ export class NfcTagsService {
       });
     }
     const businesses = await this.prisma.business.findMany({ where: { ownerId: userId } });
-    const businessIds = businesses.map((b) => b.id);
+    const businessIds = businesses.map((b: any) => b.id);
     return this.prisma.nfcTag.findMany({
       where: { businessId: { in: businessIds } },
       orderBy: { createdAt: 'desc' },

@@ -75,7 +75,7 @@ export class PagesService {
     }
     // Sin filtro: retornar páginas de todos los negocios del usuario
     const businesses = await this.prisma.business.findMany({ where: { ownerId: userId } });
-    const businessIds = businesses.map((b) => b.id);
+    const businessIds = businesses.map((b: any) => b.id);
     return this.prisma.page.findMany({
       where: { businessId: { in: businessIds } },
       orderBy: { createdAt: 'desc' },
