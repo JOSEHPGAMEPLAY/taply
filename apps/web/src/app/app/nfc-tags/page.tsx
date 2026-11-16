@@ -113,7 +113,7 @@ export default function NfcTagsPage() {
 
     try {
       setSubmitting(true);
-      await api.createNfcTag({ businessId: formData.businessId });
+      await api.createNfcTag(formData.businessId);
       showSuccess('Etiqueta NFC creada correctamente');
       setShowModal(false);
       await loadData();
@@ -142,7 +142,7 @@ export default function NfcTagsPage() {
 
     try {
       setSubmitting(true);
-      await api.assignTag(selectedTag.id, assignData.pageId);
+      await api.assignTag(selectedTag.id, selectedTag.businessId, assignData.pageId);
       showSuccess('Etiqueta asignada correctamente');
       setShowAssignModal(false);
       await loadData();

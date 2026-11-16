@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { BusinessesService } from './businesses.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
@@ -30,6 +31,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
  * - PATCH /businesses/:id - Actualizar negocio
  * - DELETE /businesses/:id - Eliminar negocio
  */
+@ApiTags('Businesses')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('businesses')
 export class BusinessesController {
@@ -48,6 +51,10 @@ export class BusinessesController {
    * @returns Negocio creado
    */
   @Post()
+  @ApiOperation({ summary: 'Crear un nuevo negocio', description: 'Crea un negocio para el usuario autenticado. El slug se genera automáticamente.' })
+  @ApiBody({ type: CreateBusinessDto })
+  @ApiResponse({ status: 201, description: 'Negocio creado exitosamente' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
   async create(@Body() dto: CreateBusinessDto, @Request() request: any) {
     return this.businessesService.create(request.user.userId, dto);
   }
@@ -59,6 +66,8 @@ export class BusinessesController {
    * @returns Array de negocios
    */
   @Get()
+  @ApiOperation({ summary: 'Listar negocios del usuario', description: 'Retorna todos los negocios del usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Lista de negocios' })
   async findAll(@Request() request: any) {
     return this.businessesService.findAll(request.user.userId);
   }
@@ -71,6 +80,10 @@ export class BusinessesController {
    * @returns Negocio si existe y pertenece al owner
    */
   @Get(':id')
+  @ApiOperation({ summary: 'Obtener negocio por ID', description: 'Retorna un negocio si pertenece al usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Negocio encontrado' })
+  @ApiResponse({ status: 404, description: 'Negocio no encontrado' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
   async findOne(@Param('id') id: string, @Request() request: any) {
     return this.businessesService.findOne(id, request.user.userId);
   }
@@ -84,6 +97,11 @@ export class BusinessesController {
    * @returns Negocio actualizado
    */
   @Patch(':id')
+  @ApiOperation({ summary: 'Actualizar negocio', description: 'Actualiza parcialmente un negocio del usuario autenticado' })
+  @ApiBody({ type: UpdateBusinessDto })
+  @ApiResponse({ status: 200, description: 'Negocio actualizado' })
+  @ApiResponse({ status: 404, description: 'Negocio no encontrado' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateBusinessDto,
@@ -99,6 +117,10 @@ export class BusinessesController {
    * @param request - Request con el usuario autenticado
    */
   @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar negocio', description: 'Elimina un negocio y todos sus recursos asociados' })
+  @ApiResponse({ status: 200, description: 'Negocio eliminado' })
+  @ApiResponse({ status: 404, description: 'Negocio no encontrado' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
   async remove(@Param('id') id: string, @Request() request: any) {
     await this.businessesService.remove(id, request.user.userId);
     return { message: 'Negocio eliminado correctamente' };

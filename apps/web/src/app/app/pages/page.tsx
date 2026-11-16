@@ -108,8 +108,7 @@ export default function PagesPage() {
 
     try {
       setSubmitting(true);
-      await api.createPage({
-        businessId: formData.businessId,
+      await api.createPage(formData.businessId, {
         slug: formData.slug.trim().toLowerCase().replace(/\s+/g, '-'),
       });
       showSuccess('Página creada correctamente');
@@ -129,7 +128,7 @@ export default function PagesPage() {
     const isPublished = page.status === 'PUBLISHED';
     try {
       if (!isPublished) {
-        await api.publishPage(page.id);
+        await api.publishPage(page.id, page.businessId);
         showSuccess('Página publicada correctamente');
       } else {
         // For unpublish, we'll use a placeholder — the API needs an unpublish endpoint
@@ -144,12 +143,14 @@ export default function PagesPage() {
   /**
    * Elimina una página después de confirmar.
    */
-  const handleDelete = async () => {
-    if (!confirm('¿Estás seguro de eliminar esta página? Esta acción no se puede deshacer.')) {
+  const handleDelete = async (page: Page) => {
+    if (!confirm(`¿Estás seguro de eliminar "${page.slug}"? Esta acción no se puede deshacer.`)) {
       return;
     }
     try {
-      showSuccess('Funcionalidad de eliminar en desarrollo');
+      await api.deletePage(page.id, page.businessId);
+      showSuccess('Página eliminada correctamente');
+      await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al eliminar la página');
     }
@@ -302,7 +303,7 @@ export default function PagesPage() {
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete()}
+                          onClick={() => handleDelete(page)}
                           className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
                           title="Eliminar"
                         >
