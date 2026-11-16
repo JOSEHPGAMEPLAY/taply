@@ -60,6 +60,9 @@ importers:
       class-validator:
         specifier: ^0.15.1
         version: 0.15.1
+      nodemailer:
+        specifier: ^10.6.0
+        version: 10.6.0
       passport:
         specifier: ^0.7.0
         version: 0.7.0
@@ -3101,6 +3104,10 @@ packages:
   node-releases@2.0.64:
     resolution: {integrity: sha512-zAPCKqMcnqs2nGy6nlkm7JduFseiBJy3EXHGLh+8pFR+TxGCBxxiEN21+UROU5CKwX/f4TlUcYjiM+vs/tsyxw==}
     engines: {node: '>=18'}
+
+  nodemailer@10.6.0:
+    resolution: {integrity: sha512-jWanL7D9GD3jvUDYKmoC5rWTiG8MnBgnN2yV68bgMKip1zUJhiSTyz7Eg+18y8sk5OvdVDzws5nZK5arSI4f5Q==}
+    engines: {node: '>=20.0.0'}
 
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
@@ -7261,6 +7268,8 @@ snapshots:
   node-int64@0.4.0: {}
 
   node-releases@2.0.64: {}
+
+  nodemailer@10.6.0: {}
 
   normalize-path@3.0.0: {}
 

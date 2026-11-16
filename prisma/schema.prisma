@@ -103,6 +103,12 @@ enum AuditAction {
   SUBSCRIPTION
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
 // ============================================
 // MODELOS BASE
 // ============================================
@@ -113,18 +119,36 @@ model User {
   passwordHash   String
   name           String?
   role           UserRole       @default(USER)
+  status         UserStatus     @default(ACTIVE)
   emailVerifiedAt DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
   // Relaciones
-  authSessions   AuthSession[]
-  authTokens     AuthToken[]
-  businesses     Business[]
-  auditLogs      AuditLog[]     @relation("AuditLogActor")
+  authSessions        AuthSession[]
+  authTokens          AuthToken[]
+  businesses          Business[]
+  auditLogs           AuditLog[]     @relation("AuditLogActor")
+  passwordResetTokens PasswordResetToken[]
 
   @@index([email])
   @@map("users")
+}
+
+model PasswordResetToken {
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  // Relaciones
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("password_reset_tokens")
 }
 
 model AuthSession {

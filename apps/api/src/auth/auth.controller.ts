@@ -97,4 +97,28 @@ export class AuthController {
   async getProfile(@Request() request: any) {
     return this.authService.getProfile(request.user.userId);
   }
+
+  /**
+   * Solicita restablecimiento de contraseña (público).
+   * No revela si el email existe por seguridad.
+   */
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Solicitar restablecimiento de contraseña', description: 'Envía email con token de restablecimiento' })
+  @ApiBody({ schema: { type: 'object', properties: { email: { type: 'string' } } } })
+  @ApiResponse({ status: 200, description: 'Si el email existe, se envió un correo' })
+  async forgotPassword(@Body('email') email: string) {
+    return this.authService.forgotPassword(email);
+  }
+
+  /**
+   * Restablece la contraseña con un token válido (público).
+   */
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Restablecer contraseña', description: 'Valida token y actualiza la contraseña' })
+  @ApiBody({ schema: { type: 'object', properties: { token: { type: 'string' }, newPassword: { type: 'string' } } } })
+  @ApiResponse({ status: 200, description: 'Contraseña actualizada' })
+  @ApiResponse({ status: 400, description: 'Token inválido o expirado' })
+  async resetPassword(@Body('token') token: string, @Body('newPassword') newPassword: string) {
+    return this.authService.resetPassword(token, newPassword);
+  }
 }

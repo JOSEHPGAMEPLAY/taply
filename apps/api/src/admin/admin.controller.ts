@@ -1,8 +1,10 @@
-import { Controller, Get, Patch, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Patch, Delete, Post, Param, Body, UseGuards, Request, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
+import { BulkActionDto } from './dto/bulk-action.dto';
 
 /**
  * AdminController - Endpoints de gestión de usuarios (solo administradores).
@@ -21,20 +23,25 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   /**
-   * Lista todos los usuarios del sistema.
-   * Solo accesible por administradores.
+   * Lista todos los usuarios con filtros opcionales.
    */
   @Get('users')
-  @ApiOperation({ summary: 'Listar todos los usuarios (solo admin)' })
+  @ApiOperation({ summary: 'Listar usuarios con filtros (solo admin)' })
+  @ApiQuery({ name: 'search', required: false, description: 'Buscar por nombre o email' })
+  @ApiQuery({ name: 'role', required: false, description: 'Filtrar por rol (ADMIN/USER)' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filtrar por status (ACTIVE/SUSPENDED/DEACTIVATED)' })
   @ApiResponse({ status: 200, description: 'Lista de usuarios' })
   @ApiResponse({ status: 403, description: 'No autorizado' })
-  async findAllUsers() {
-    return this.adminService.findAllUsers();
+  async findAllUsers(
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.adminService.findAllUsers({ search, role, status });
   }
 
   /**
    * Cambia el rol de un usuario.
-   * Body: { role: 'ADMIN' | 'USER' }
    */
   @Patch('users/:id/role')
   @ApiOperation({ summary: 'Cambiar rol de un usuario (solo admin)' })
@@ -50,8 +57,46 @@ export class AdminController {
   }
 
   /**
+   * Cambia el estado de un usuario.
+   */
+  @Patch('users/:id/status')
+  @ApiOperation({ summary: 'Cambiar estado de un usuario (solo admin)' })
+  @ApiResponse({ status: 200, description: 'Estado actualizado' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async updateUserStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateStatusDto,
+  ) {
+    return this.adminService.updateUserStatus(id, dto.status);
+  }
+
+  /**
+   * Solicita restablecimiento de contraseña para un usuario.
+   */
+  @Post('users/:id/request-password-reset')
+  @ApiOperation({ summary: 'Solicitar reset de contraseña (solo admin)' })
+  @ApiResponse({ status: 200, description: 'Email enviado' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async requestPasswordReset(@Param('id') id: string) {
+    return this.adminService.requestPasswordReset(id);
+  }
+
+  /**
+   * Ejecuta acción masiva sobre múltiples usuarios.
+   */
+  @Patch('users/bulk')
+  @ApiOperation({ summary: 'Acción masiva sobre usuarios (solo admin)' })
+  @ApiResponse({ status: 200, description: 'Acción ejecutada' })
+  @ApiResponse({ status: 400, description: 'Acción o valor inválido' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
+  async bulkAction(@Body() dto: BulkActionDto) {
+    return this.adminService.bulkAction(dto.userIds, dto.action, dto.value);
+  }
+
+  /**
    * Elimina un usuario del sistema.
-   * No permite auto-eliminación ni eliminar el último admin.
    */
   @Delete('users/:id')
   @ApiOperation({ summary: 'Eliminar un usuario (solo admin)' })

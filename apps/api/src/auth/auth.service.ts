@@ -1,4 +1,4 @@
-import { Injectable, Inject, ConflictException, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, ConflictException, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -92,6 +92,11 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    // Verificar que el usuario está activo
+    if (user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Tu cuenta está desactivada. Contacta al administrador.');
     }
 
     // Verificar la contraseña contra el hash almacenado
@@ -198,5 +203,79 @@ export class AuthService {
   private sanitizeUser(user: any) {
     const { passwordHash, ...sanitized } = user;
     return sanitized;
+  }
+
+  /**
+   * Solicita restablecimiento de contraseña (público).
+   * No revela si el email existe por seguridad.
+   */
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user) {
+      const token = require('crypto').randomBytes(32).toString('hex');
+      const tokenHash = await bcrypt.hash(token, 10);
+
+      await this.prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+      await this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        },
+      });
+
+      const resetUrl = `http://localhost:3000/reset-password/${token}`;
+      const mailService = new (require('../mail/mail.service').MailService)();
+      await mailService.sendPasswordResetEmail(user.email, resetUrl);
+    }
+
+    // Siempre retorna el mismo mensaje por seguridad
+    return { message: 'Si el correo existe, recibirás un enlace de restablecimiento' };
+  }
+
+  /**
+   * Restablece la contraseña con un token válido (público).
+   */
+  async resetPassword(token: string, newPassword: string) {
+    // Buscar todos los tokens no usados y no expirados
+    const resetTokens = await this.prisma.passwordResetToken.findMany({
+      where: {
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    let resetToken = null;
+    for (const rt of resetTokens) {
+      const isValid = await bcrypt.compare(token, rt.tokenHash);
+      if (isValid) {
+        resetToken = rt;
+        break;
+      }
+    }
+
+    if (!resetToken) {
+      throw new BadRequestException('Token inválido o expirado');
+    }
+
+    // Validar contraseña
+    if (newPassword.length < 6) {
+      throw new BadRequestException('La contraseña debe tener al menos 6 caracteres');
+    }
+
+    // Actualizar contraseña y marcar token como usado
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true },
+      }),
+    ]);
+
+    return { message: 'Contraseña actualizada correctamente' };
   }
 }
