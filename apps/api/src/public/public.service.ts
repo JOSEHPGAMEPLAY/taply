@@ -128,7 +128,7 @@ export class PublicService {
         tagId: dto.tagId,
         type: dto.type,
         buttonKey: dto.buttonKey,
-        metadata: dto.metadata,
+        metadata: dto.metadata as any,
       },
     });
 

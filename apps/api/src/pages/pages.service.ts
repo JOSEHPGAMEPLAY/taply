@@ -21,7 +21,7 @@ export class PagesService {
     if (!business) throw new NotFoundException('Negocio no encontrado');
 
     // Crear página y versión inicial en una transacción
-    const page = await this.prisma.$transaction(async (tx: PrismaClient) => {
+    const page = await this.prisma.$transaction(async (tx: any) => {
       const page = await tx.page.create({
         data: {
           businessId,
@@ -54,7 +54,7 @@ export class PagesService {
     return this.prisma.page.findMany({
       where: { businessId },
       orderBy: { createdAt: 'desc' },
-      include: { publishedVersion: true },
+      include: { versions: true },
     });
   }
 

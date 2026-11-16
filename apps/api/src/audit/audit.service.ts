@@ -40,7 +40,7 @@ export class AuditService {
           entity: data.entity,
           entityId: data.entityId,
           action: data.action as any,
-          details: data.details,
+          details: data.details as any,
         },
       });
     } catch (error) {
