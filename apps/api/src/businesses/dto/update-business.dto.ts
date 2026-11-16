@@ -1,4 +1,4 @@
-import { IsString, MinLength, MaxLength, IsOptional } from 'class-validator';
+import { IsString, MinLength, MaxLength, IsOptional, IsEnum } from 'class-validator';
 
 /**
  * UpdateBusinessDto - Datos de entrada para actualizar un negocio.
@@ -25,4 +25,13 @@ export class UpdateBusinessDto {
   @IsString({ message: 'La descripción debe ser un texto' })
   @MaxLength(500, { message: 'La descripción no puede exceder 500 caracteres' })
   description?: string;
+
+  /**
+   * Nuevo estado del negocio.
+   */
+  @IsOptional()
+  @IsEnum(['PROSPECT', 'ACTIVE', 'PAUSED', 'SUSPENDED', 'CLOSED'], {
+    message: 'El estado debe ser PROSPECT, ACTIVE, PAUSED, SUSPENDED o CLOSED',
+  })
+  status?: string;
 }

@@ -136,8 +136,19 @@ export default function BusinessesPage() {
    * Cambia el estado del negocio (activo/pausado).
    * Nota: La API no soporta cambiar el status aún, es un placeholder.
    */
-  const toggleStatus = async (_biz: Business) => {
-    setError('El cambio de estado del negocio estará disponible próximamente');
+  const toggleStatus = async (biz: Business) => {
+    const newStatus = biz.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    try {
+      await api.updateBusinessStatus(biz.id, newStatus);
+      setBusinesses((prev) =>
+        prev.map((b: any) => (b.id === biz.id ? { ...b, status: newStatus } : b))
+      );
+      setSuccessMessage(`Negocio ${newStatus === 'ACTIVE' ? 'activado' : 'pausado'} correctamente`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch {
+      setError('No se pudo cambiar el estado del negocio');
+      setTimeout(() => setError(null), 3000);
+    }
   };
 
   /**

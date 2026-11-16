@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { PublicService } from './public.service';
 import { RecordEventDto } from './dto/record-event.dto';
@@ -56,5 +56,23 @@ export class PublicController {
   @ApiResponse({ status: 404, description: 'Página no encontrada' })
   async recordEvent(@Body() dto: RecordEventDto) {
     return this.publicService.recordEvent(dto);
+  }
+
+  /**
+   * Obtiene los datos públicos de una página por su slug.
+   *
+   * Retorna el nombre del negocio, descripción, botones de la versión publicada
+   * y slug de la página. No requiere autenticación.
+   *
+   * @param slug - Slug único de la página
+   * @returns Datos de la página para renderizado público
+   */
+  @Get('pages/:slug')
+  @ApiOperation({ summary: 'Obtener datos públicos de una página por slug' })
+  @ApiResponse({ status: 200, description: 'Página encontrada' })
+  @ApiResponse({ status: 404, description: 'Página no encontrada' })
+  @ApiResponse({ status: 400, description: 'Negocio no activo o sin versión publicada' })
+  async getPublicPage(@Param('slug') slug: string) {
+    return this.publicService.getPublicPage(slug);
   }
 }

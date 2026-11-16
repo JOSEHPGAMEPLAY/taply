@@ -52,6 +52,7 @@ export class BusinessesService {
         name: dto.name,
         slug,
         description: dto.description,
+        status: 'ACTIVE',
       },
     });
 

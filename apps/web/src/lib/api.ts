@@ -322,6 +322,24 @@ export const api = {
   },
 
   /**
+   * Obtiene los datos públicos de una página por slug (sin autenticación).
+   */
+  async getPublicPage(slug: string) {
+    return apiRequest<{
+      page: { id: string; slug: string };
+      business: { id: string; name: string; description: string };
+      publishedVersion: { config: any; buttons: Array<{ key: string; label: string; url: string; icon?: string }> };
+    }>('GET', `/public/pages/${slug}`);
+  },
+
+  /**
+   * Actualiza el estado de un negocio.
+   */
+  async updateBusinessStatus(id: string, status: string) {
+    return apiRequest<unknown>('PATCH', `/businesses/${id}`, { status });
+  },
+
+  /**
    * POST /public/analytics/events (sin autenticación)
    * Body: { type: 'PAGE_VIEW'|'BUTTON_CLICK'|'TAG_SCAN', pageId: string, tagId?: string, buttonKey?: string, metadata?: object }
    * Response: { id, type, pageId, ... }

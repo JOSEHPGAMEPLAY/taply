@@ -106,6 +106,72 @@ export class PublicService {
   }
 
   /**
+   * Obtiene los datos públicos de una página por su slug.
+   *
+   * Busca la página por slug, verifica que el negocio esté activo y que
+   * exista una versión publicada. Retorna el nombre del negocio, descripción,
+   * botones de la versión publicada y slug de la página.
+   *
+   * @param slug - Slug único de la página
+   * @returns Datos de la página para renderizado público
+   */
+  async getPublicPage(slug: string) {
+    const page = await this.prisma.page.findFirst({
+      where: { slug, status: 'PUBLISHED' },
+      include: {
+        business: true,
+      },
+    });
+
+    if (!page) {
+      return { error: 'Página no encontrada', statusCode: 404 };
+    }
+
+    // Verificar que el negocio esté activo
+    if (page.business.status !== 'ACTIVE') {
+      return { error: 'Negocio no activo', statusCode: 400 };
+    }
+
+    // Verificar que la página tenga una versión publicada
+    if (!page.publishedVersionId) {
+      return { error: 'Página sin versión publicada', statusCode: 400 };
+    }
+
+    // Obtener la versión publicada
+    const publishedVersion = await this.prisma.pageVersion.findUnique({
+      where: { id: page.publishedVersionId },
+    });
+
+    if (!publishedVersion) {
+      return { error: 'Versión publicada no encontrada', statusCode: 400 };
+    }
+
+    // Registrar evento PAGE_VIEW automáticamente
+    await this.prisma.analyticsEvent.create({
+      data: {
+        pageId: page.id,
+        type: 'PAGE_VIEW',
+      },
+    });
+
+    return {
+      page: {
+        id: page.id,
+        slug: page.slug,
+      },
+      business: {
+        id: page.business.id,
+        name: page.business.name,
+        description: page.business.description,
+      },
+      publishedVersion: {
+        config: publishedVersion.config,
+        buttons: publishedVersion.buttons,
+      },
+    };
+  }
+
+  /**
    * Registra un evento de analíticas sin autenticación.
    *
    * Permite registrar PAGE_VIEW, BUTTON_CLICK y TAG_SCAN desde el frontend

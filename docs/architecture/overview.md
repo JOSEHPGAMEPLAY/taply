@@ -8,18 +8,18 @@ Taply es una plataforma SaaS monolítica modular que permite a los negocios crea
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        Cliente (Navegador)                   │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│                        Cliente (Navegador)                  │
+│  ┌───────────────┐  ┌──────────────┐  ┌──────────────────┐  │
 │  │ Panel Cliente │  │ Páginas      │  │ Resolución NFC   │  │
-│  │ (Next.js)    │  │ Públicas     │  │ /t/[token]       │  │
-│  │ /app/*       │  │ /p/[slug]    │  │                  │  │
-│  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘  │
+│  │ (Next.js)     │  │ Públicas     │  │ /t/[token]       │  │
+│  │ /app/*        │  │ /p/[slug]    │  │                  │  │
+│  └──────┬────────┘  └──────┬───────┘  └────────┬─────────┘  │
 │         │                 │                    │            │
 └─────────┼─────────────────┼────────────────────┼────────────┘
           │                 │                    │
           ▼                 ▼                    ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     API Gateway (NestJS)                     │
+┌───────────────────────────────────────────────────────────┐
+│                     API Gateway (NestJS)                  │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐  │
 │  │ Auth     │ │Businesses│ │ Pages    │ │ NFC Tags     │  │
 │  │ Module   │ │ Module   │ │ Module   │ │ Module       │  │
@@ -28,13 +28,13 @@ Taply es una plataforma SaaS monolítica modular que permite a los negocios crea
 │  │Analytics │ │ Billing  │ │ Public   │ │ QR           │  │
 │  │ Module   │ │ Module   │ │ Module   │ │ Module       │  │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────────┘  │
-│         │                                                    │
-│         ▼ (Prisma Client)                                    │
-└─────────┼───────────────────────────────────────────────────┘
+│         │                                                 │
+│         ▼ (Prisma Client)                                 │
+└─────────┼─────────────────────────────────────────────────┘
           │
           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                  PostgreSQL 16 (Docker)                      │
+│                  PostgreSQL 16 (Docker)                     │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │ Esquema Prisma: 17 modelos, 11 enums, restricciones  │   │
 │  │ Volumen persistente: taply_postgres_data             │   │

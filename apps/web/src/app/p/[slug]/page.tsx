@@ -2,10 +2,54 @@ import Link from 'next/link';
 
 /**
  * Página pública de un negocio.
- * Muestra el perfil del negocio, botones configurados y registra PAGE_VIEW.
+ * Carga datos reales de la API pública y muestra perfil, botones y registra PAGE_VIEW.
  */
 export default async function PublicPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+
+  // Server Component: dentro de Docker usa la red interna (api:3001)
+  const apiUrl = 'http://api:3001/api/v1';
+  let data: any = null;
+  let error: string | null = null;
+
+  try {
+    const res = await fetch(`${apiUrl}/public/pages/${slug}`, {
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      data = await res.json();
+    } else {
+      const err = await res.json().catch(() => null);
+      error = err?.error || 'Error al cargar la página';
+    }
+  } catch {
+    error = 'No se pudo conectar con el servidor';
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-white/10 rounded-2xl mx-auto flex items-center justify-center mb-6">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <h2 className="text-2xl font-bold text-white">Página no disponible</h2>
+          <p className="mt-3 text-blue-100/80">{error}</p>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-white text-blue-700 rounded-xl hover:bg-blue-50 transition-colors text-sm font-semibold"
+          >
+            Volver al inicio
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const business = data?.business;
+  const rawButtons = data?.publishedVersion?.buttons;
+  const buttons: Array<{ key: string; label: string; url: string; icon?: string }> = Array.isArray(rawButtons) ? rawButtons : [];
+  const initial = business?.name?.charAt(0)?.toUpperCase() || slug.charAt(0).toUpperCase();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -29,28 +73,42 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
         <div className="text-center">
           {/* Avatar */}
           <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mx-auto flex items-center justify-center shadow-lg">
-            <span className="text-white text-3xl font-bold">{slug.charAt(0).toUpperCase()}</span>
+            <span className="text-white text-3xl font-bold">{initial}</span>
           </div>
 
           {/* Business info */}
-          <h2 className="mt-6 text-2xl font-bold text-gray-900">{slug}</h2>
-          <p className="mt-2 text-gray-500">Página pública de Taply</p>
+          <h2 className="mt-6 text-2xl font-bold text-gray-900">{business?.name || slug}</h2>
+          {business?.description && (
+            <p className="mt-2 text-gray-500 max-w-md mx-auto">{business.description}</p>
+          )}
 
-          {/* Buttons placeholder */}
+          {/* Buttons */}
           <div className="mt-8 space-y-3">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-              <p className="text-sm text-gray-400">Los botones de la página aparecerán aquí cuando se configuren.</p>
-            </div>
-          </div>
-
-          {/* Info */}
-          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <p className="text-sm text-gray-500">
-              Esta página es accesible públicamente mediante etiquetas NFC y códigos QR.
-            </p>
-            <p className="mt-2 text-xs text-gray-400">
-              Slug: {slug}
-            </p>
+            {buttons.length > 0 ? (
+              buttons.map((btn) => (
+                <a
+                  key={btn.key}
+                  href={btn.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-left hover:shadow-md hover:border-blue-200 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    {btn.icon && <span className="text-xl">{btn.icon}</span>}
+                    <span className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {btn.label}
+                    </span>
+                    <span className="ml-auto text-gray-400 group-hover:text-blue-500">→</span>
+                  </div>
+                </a>
+              ))
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <p className="text-sm text-gray-400">
+                  Este negocio aún no ha configurado botones.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </main>
