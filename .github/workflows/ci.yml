@@ -77,13 +77,18 @@ jobs:
           cp .env.example .env
           sed -i 's/POSTGRES_PASSWORD=change_me/POSTGRES_PASSWORD=test_password/' .env
           sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgresql://taply_user:test_password@localhost:5432/taply_test?schema=public|' .env
-          pnpm --filter @taply/api prisma migrate reset --force
-          pnpm --filter @taply/api prisma db seed
+          cd apps/api
+          npx prisma migrate reset --force
+          npx prisma db seed
+          cd ../..
         env:
           DATABASE_URL: postgresql://taply_user:test_password@localhost:5432/taply_test?schema=public
 
       - name: Run API tests
-        run: pnpm --filter @taply/api test
+        run: |
+          cd apps/api
+          npx jest --runInBand --forceExit
+          cd ../..
         env:
           DATABASE_URL: postgresql://taply_user:test_password@localhost:5432/taply_test?schema=public
           JWT_SECRET: test-jwt-secret
