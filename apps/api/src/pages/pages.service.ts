@@ -1,5 +1,5 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
@@ -15,10 +15,19 @@ export class PagesService {
 
   /**
    * Crea una nueva página para un negocio.
+   * Si el slug ya existe para ese negocio, retorna 409 Conflict.
    */
   async create(businessId: string, dto: CreatePageDto) {
     const business = await this.prisma.business.findUnique({ where: { id: businessId } });
     if (!business) throw new NotFoundException('Negocio no encontrado');
+
+    // Verificar que el slug no exista ya para este negocio
+    const existing = await this.prisma.page.findUnique({
+      where: { businessId_slug: { businessId, slug: dto.slug } },
+    });
+    if (existing) {
+      throw new ConflictException(`Ya existe una página con el slug "${dto.slug}" para este negocio. Elige otro slug.`);
+    }
 
     // Crear página y versión inicial en una transacción
     const page = await this.prisma.$transaction(async (tx: any) => {

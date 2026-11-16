@@ -128,9 +128,16 @@ export default function PagesPage() {
       });
       showSuccess('Página creada correctamente');
       setShowModal(false);
+      setFormData({ businessId: filterBusinessId, slug: '' });
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear la página');
+      // Si es un error de slug duplicado, mostrar mensaje claro
+      const message = err instanceof Error ? err.message : 'Error al crear la página';
+      if (message.includes('slug') || message.includes('duplicado') || message.includes('ya existe')) {
+        setError(`El slug "${formData.slug.trim().toLowerCase().replace(/\s+/g, '-')}" ya existe para este negocio. Elige otro nombre.`);
+      } else {
+        setError(message);
+      }
     } finally {
       setSubmitting(false);
     }
