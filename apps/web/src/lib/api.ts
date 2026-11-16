@@ -200,7 +200,7 @@ export const api = {
    * Body: { slug?: string, templateId?: string }
    * Response: Página actualizada
    */
-  async updatePage(id: string, businessId: string, data: { slug?: string; templateId?: string }) {
+  async updatePage(id: string, businessId: string, data: { slug?: string; templateId?: string; buttons?: Array<{ key: string; label: string; url: string; icon?: string }> }) {
     return apiRequest<unknown>('PATCH', `/pages/${id}?businessId=${businessId}`, data);
   },
 

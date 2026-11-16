@@ -73,7 +73,27 @@ export class PagesService {
    */
   async update(businessId: string, pageId: string, dto: UpdatePageDto) {
     await this.verifyOwnership(businessId, pageId);
-    return this.prisma.page.update({ where: { id: pageId }, data: dto });
+
+    // Si se actualizan botones, actualizar la versión DRAFT más reciente
+    if (dto.buttons !== undefined) {
+      const draftVersion = await this.prisma.pageVersion.findFirst({
+        where: { pageId, status: 'DRAFT' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (draftVersion) {
+        await this.prisma.pageVersion.update({
+          where: { id: draftVersion.id },
+          data: { buttons: dto.buttons },
+        });
+      }
+    }
+
+    const updateData: any = {};
+    if (dto.slug !== undefined) updateData.slug = dto.slug;
+    if (dto.templateId !== undefined) updateData.templateId = dto.templateId;
+
+    return this.prisma.page.update({ where: { id: pageId }, data: updateData });
   }
 
   /**

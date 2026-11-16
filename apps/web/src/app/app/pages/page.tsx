@@ -12,6 +12,7 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  MousePointerClick,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -25,6 +26,16 @@ interface Page {
   businessId: string;
   businessName?: string;
   createdAt: string;
+}
+
+/**
+ * Tipos para los botones de una página.
+ */
+interface PageButton {
+  key: string;
+  label: string;
+  url: string;
+  icon?: string;
 }
 
 /**
@@ -49,6 +60,10 @@ export default function PagesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [filterBusinessId, setFilterBusinessId] = useState<string>('');
+  const [editingPage, setEditingPage] = useState<Page | null>(null);
+  const [buttons, setButtons] = useState<PageButton[]>([]);
+  const [newButton, setNewButton] = useState({ key: '', label: '', url: '', icon: '' });
+  const [savingButtons, setSavingButtons] = useState(false);
 
   /**
    * Carga las páginas y negocios desde la API.
@@ -153,6 +168,59 @@ export default function PagesPage() {
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al eliminar la página');
+    }
+  };
+
+  /**
+   * Abre el editor de botones para una página.
+   */
+  const openButtonEditor = async (page: Page) => {
+    try {
+      const pageData = await api.getPage(page.id, page.businessId);
+      const p = pageData as any;
+      const versions = p?.versions || [];
+      const draftVersion = versions.find((v: any) => v.status === 'DRAFT');
+      const publishedVersion = versions.find((v: any) => v.status === 'PUBLISHED');
+      const currentButtons = (draftVersion?.buttons || publishedVersion?.buttons || []) as PageButton[];
+      setButtons(Array.isArray(currentButtons) ? currentButtons : []);
+      setEditingPage(page);
+    } catch {
+      setButtons([]);
+      setEditingPage(page);
+    }
+  };
+
+  /**
+   * Agrega un botón a la lista.
+   */
+  const addButton = () => {
+    if (!newButton.key.trim() || !newButton.label.trim() || !newButton.url.trim()) return;
+    setButtons([...buttons, { ...newButton, key: newButton.key.trim().toLowerCase().replace(/\s+/g, '-') }]);
+    setNewButton({ key: '', label: '', url: '', icon: '' });
+  };
+
+  /**
+   * Elimina un botón de la lista.
+   */
+  const removeButton = (index: number) => {
+    setButtons(buttons.filter((_, i) => i !== index));
+  };
+
+  /**
+   * Guarda los botones actualizados.
+   */
+  const saveButtons = async () => {
+    if (!editingPage) return;
+    try {
+      setSavingButtons(true);
+      await api.updatePage(editingPage.id, editingPage.businessId, { buttons });
+      showSuccess('Botones actualizados correctamente');
+      setEditingPage(null);
+      setButtons([]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar los botones');
+    } finally {
+      setSavingButtons(false);
     }
   };
 
@@ -297,8 +365,9 @@ export default function PagesPage() {
                           {page.status === 'PUBLISHED' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                         <button
+                          onClick={() => openButtonEditor(page)}
                           className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                          title="Editar"
+                          title="Editar botones"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -390,6 +459,127 @@ export default function PagesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Button editor modal */}
+      {editingPage && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Editar botones</h2>
+                <p className="text-sm text-gray-500 mt-0.5">{editingPage.slug}</p>
+              </div>
+              <button
+                onClick={() => setEditingPage(null)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Existing buttons */}
+              {buttons.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">Botones actuales</p>
+                  {buttons.map((btn, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <MousePointerClick className="w-4 h-4 text-blue-500" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{btn.label}</p>
+                          <p className="text-xs text-gray-500">{btn.url}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeButton(index)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Eliminar botón"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new button */}
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-sm font-medium text-gray-700 mb-3">Agregar botón</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Clave</label>
+                    <input
+                      type="text"
+                      value={newButton.key}
+                      onChange={(e) => setNewButton({ ...newButton, key: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                      placeholder="whatsapp"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Etiqueta</label>
+                    <input
+                      type="text"
+                      value={newButton.label}
+                      onChange={(e) => setNewButton({ ...newButton, label: e.target.value })}
+                      placeholder="WhatsApp"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-500 mb-1">URL</label>
+                    <input
+                      type="url"
+                      value={newButton.url}
+                      onChange={(e) => setNewButton({ ...newButton, url: e.target.value })}
+                      placeholder="https://wa.me/1234567890"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-500 mb-1">Icono (opcional)</label>
+                    <input
+                      type="text"
+                      value={newButton.icon}
+                      onChange={(e) => setNewButton({ ...newButton, icon: e.target.value })}
+                      placeholder="whatsapp, phone, mail, web..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={addButton}
+                  disabled={!newButton.key.trim() || !newButton.label.trim() || !newButton.url.trim()}
+                  className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  <Plus className="w-4 h-4" />
+                  Agregar botón
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100">
+              <button
+                onClick={() => setEditingPage(null)}
+                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveButtons}
+                disabled={savingButtons}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              >
+                {savingButtons ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Guardando...
+                  </span>
+                ) : 'Guardar botones'}
+              </button>
+            </div>
           </div>
         </div>
       )}
