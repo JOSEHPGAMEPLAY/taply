@@ -19,16 +19,16 @@
     "db:studio": "pnpm --filter @taply/api prisma studio"
   },
   "devDependencies": {
-    "@nestjs/cli": "^10.4.0",
+    "@nestjs/cli": "^11.0.0",
     "@taply/eslint-config": "workspace:*",
     "@taply/typescript-config": "workspace:*",
     "prisma": "6.19.3"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=22.12.0",
+    "pnpm": ">=10.0.0"
   },
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.4.1",
   "dependencies": {
     "@prisma/client": "6.19.3",
     "tsx": "^4.23.15"

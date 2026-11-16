@@ -1,16 +1,16 @@
-FROM node:20-alpine
+# Stage 1: Build
+FROM node:22-alpine AS builder
 RUN corepack enable && \
     addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 WORKDIR /app
 
-# Copy all workspace files
+# Copy workspace configuration files first for better caching
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-COPY apps/api/ ./apps/api/
-COPY apps/web/ ./apps/web/
 COPY packages/ ./packages/
+COPY apps/web/ ./apps/web/
 
-# Install dependencies
+# Install all workspace dependencies
 RUN pnpm install --frozen-lockfile
 
 # NEXT_PUBLIC_* variables must be available at BUILD time for Next.js to bake them into the JS bundles.
@@ -32,10 +32,21 @@ RUN pnpm --filter @taply/web build
 # This is done INSIDE the container, not from the host.
 RUN cp -r /app/apps/web/.next/static /app/apps/web/.next/standalone/apps/web/.next/static
 
+# Stage 2: Production
+FROM node:22-alpine AS production
+RUN corepack enable && \
+    addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodejs
+WORKDIR /app
+
+# Copy only necessary files from builder
+COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nodejs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=nodejs:nodejs /app/apps/web/public ./apps/web/public
+
 # Production config
 ENV NODE_ENV=production
 USER nodejs
 EXPOSE 3000
 
-WORKDIR /app/apps/web/.next/standalone
 CMD ["node", "apps/web/server.js"]
