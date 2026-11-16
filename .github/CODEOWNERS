@@ -1,0 +1,21 @@
+# Code Owners
+
+## Backend (NestJS API)
+apps/api/ @JOSEHPGAMEPLAY
+
+## Frontend (Next.js Web)
+apps/web/ @JOSEHPGAMEPLAY
+
+## Database Schema
+prisma/ @JOSEHPGAMEPLAY
+
+## CI/CD Workflows
+.github/workflows/ @JOSEHPGAMEPLAY
+
+## Documentation
+docs/ @JOSEHPGAMEPLAY
+
+## Docker Configuration
+docker-compose*.yml @JOSEHPGAMEPLAY
+apps/api/Dockerfile @JOSEHPGAMEPLAY
+apps/web/Dockerfile @JOSEHPGAMEPLAY

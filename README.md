@@ -4,6 +4,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
 </div>
 
 <br />
@@ -22,6 +23,16 @@
   <img src="https://img.shields.io/github/issues/JOSEHPGAMEPLAY/taply?style=flat-square" alt="Issues" />
   <img src="https://img.shields.io/github/license/JOSEHPGAMEPLAY/taply?style=flat-square" alt="License" />
   <img src="https://img.shields.io/github/last-commit/JOSEHPGAMEPLAY/taply?style=flat-square" alt="Last Commit" />
+  <img src="https://img.shields.io/github/repo-size/JOSEHPGAMEPLAY/taply?style=flat-square" alt="Repo Size" />
+  <img src="https://img.shields.io/github/languages/top/JOSEHPGAMEPLAY/taply?style=flat-square" alt="Top Language" />
+</div>
+
+<br />
+
+<div align="center">
+  <img src="https://github.com/JOSEHPGAMEPLAY/taply/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI Status" />
+  <img src="https://github.com/JOSEHPGAMEPLAY/taply/actions/workflows/codeql.yml/badge.svg" alt="CodeQL" />
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome" />
 </div>
 
 <br />

@@ -45,11 +45,12 @@ prisma/dev.db-journal
 # Docker
 docker-compose.local.*.yml
 
-# Junie agent sessions and plans
-.junie/
+# Junie agent sessions (keep plans)
+.junie/tmp/
+!.junie/plans/
 
-# Project plan documents (kept locally, not versioned)
-TAPLY_MASTER_PLAN.md
+# Project plan documents
+# TAPLY_MASTER_PLAN.md is versioned
 
 # Misc
 *.tgz
