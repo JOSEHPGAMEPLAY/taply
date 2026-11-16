@@ -13,6 +13,12 @@ COPY packages/ ./packages/
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
+# NEXT_PUBLIC_* variables must be available at BUILD time for Next.js to bake them into the JS bundles.
+# Pass via docker compose build arg: docker compose build web --build-arg NEXT_PUBLIC_API_URL=...
+# Or set in .env and reference in docker-compose.yml under build.args.
+ARG NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 # Build Next.js with standalone output
 # Tailwind CSS genera los estilos automáticamente durante este paso:
 # 1. PostCSS procesa globals.css
