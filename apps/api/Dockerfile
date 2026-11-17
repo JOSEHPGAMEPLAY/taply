@@ -14,8 +14,8 @@ COPY . .
 # Install all dependencies
 RUN npm install
 
-# Generate Prisma Client (npx fetches the latest version automatically)
-RUN DATABASE_URL=${DATABASE_URL} npx prisma generate
+# Generate Prisma Client (pin to prisma@7 to avoid Prisma 8 RC which has no "generate" command)
+RUN DATABASE_URL=${DATABASE_URL} npx prisma@7 generate
 
 # Build the API
 RUN npm run build
