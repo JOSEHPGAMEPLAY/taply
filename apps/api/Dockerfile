@@ -1,5 +1,6 @@
 # Stage 1: Build
 FROM node:24-alpine AS builder
+ARG DATABASE_URL
 RUN corepack enable && \
     addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
@@ -13,8 +14,8 @@ COPY . .
 # Install all dependencies
 RUN npm install
 
-# Generate Prisma Client (needs DATABASE_URL for Prisma 7 config)
-RUN DATABASE_URL=postgresql://prisma:prisma@localhost:5432/taply ./node_modules/.bin/prisma generate
+# Generate Prisma Client
+RUN DATABASE_URL=${DATABASE_URL} npx ./node_modules/.bin/prisma generate
 
 # Build the API
 RUN npm run build
