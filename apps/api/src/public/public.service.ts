@@ -1,7 +1,7 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '../generated/prisma/client';
-import { PRISMA_CLIENT } from '../prisma/prisma.module';
-import { RecordEventDto } from './dto/record-event.dto';
+﻿import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
+import { RecordEventDto } from './dto/record-event.dto.js';
 
 /**
  * PublicService - Maneja los endpoints públicos sin autenticación.

@@ -1,5 +1,5 @@
-import { Global, Module } from '@nestjs/common';
-import { MailService } from './mail.service';
+﻿import { Global, Module } from '@nestjs/common';
+import { MailService } from './mail.service.js';
 
 /**
  * Módulo global de correo electrónico.

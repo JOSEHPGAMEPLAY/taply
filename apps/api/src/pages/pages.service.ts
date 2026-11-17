@@ -1,8 +1,8 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
-import { PrismaClient } from '../generated/prisma/client';
-import { PRISMA_CLIENT } from '../prisma/prisma.module';
-import { CreatePageDto } from './dto/create-page.dto';
-import { UpdatePageDto } from './dto/update-page.dto';
+﻿import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
+import { CreatePageDto } from './dto/create-page.dto.js';
+import { UpdatePageDto } from './dto/update-page.dto.js';
 
 /**
  * PagesService - Gestiona las páginas digitales de un negocio.

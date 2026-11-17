@@ -1,9 +1,9 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+﻿import { Controller, Post, Get, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiQuery } from '@nestjs/swagger';
-import { NfcTagsService } from './nfc-tags.service';
-import { CreateNfcTagDto } from './dto/create-nfc-tag.dto';
-import { AssignTagDto } from './dto/assign-tag.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { NfcTagsService } from './nfc-tags.service.js';
+import { CreateNfcTagDto } from './dto/create-nfc-tag.dto.js';
+import { AssignTagDto } from './dto/assign-tag.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
 /**
  * NfcTagsController - Endpoints de gestión de etiquetas NFC.

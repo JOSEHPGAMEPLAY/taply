@@ -1,6 +1,6 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { PrismaClient } from '../generated/prisma/client';
-import { PRISMA_CLIENT } from '../prisma/prisma.module';
+﻿import { Injectable, Inject } from '@nestjs/common';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
 
 /**
  * Datos de una entrada de auditoría.

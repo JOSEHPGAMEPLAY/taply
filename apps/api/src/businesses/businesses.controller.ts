@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Post,
   Get,
@@ -10,10 +10,10 @@ import {
   Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
-import { BusinessesService } from './businesses.service';
-import { CreateBusinessDto } from './dto/create-business.dto';
-import { UpdateBusinessDto } from './dto/update-business.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { BusinessesService } from './businesses.service.js';
+import { CreateBusinessDto } from './dto/create-business.dto.js';
+import { UpdateBusinessDto } from './dto/update-business.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
 /**
  * BusinessesController - Endpoints CRUD de negocios.

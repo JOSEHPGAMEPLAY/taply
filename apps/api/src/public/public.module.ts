@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { PublicController } from './public.controller';
-import { PublicService } from './public.service';
+﻿import { Module } from '@nestjs/common';
+import { PublicController } from './public.controller.js';
+import { PublicService } from './public.service.js';
 
 /**
  * PublicModule - Módulo de endpoints públicos sin autenticación.

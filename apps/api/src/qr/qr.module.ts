@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { QrController } from './qr.controller';
-import { QrService } from './qr.service';
+﻿import { Module } from '@nestjs/common';
+import { QrController } from './qr.controller.js';
+import { QrService } from './qr.service.js';
 
 /**
 * Módulo de códigos QR.

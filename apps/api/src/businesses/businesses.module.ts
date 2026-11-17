@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { BusinessesController } from './businesses.controller';
-import { BusinessesService } from './businesses.service';
+﻿import { Module } from '@nestjs/common';
+import { BusinessesController } from './businesses.controller.js';
+import { BusinessesService } from './businesses.service.js';
 
 /**
  * BusinessesModule - Módulo de gestión de negocios.

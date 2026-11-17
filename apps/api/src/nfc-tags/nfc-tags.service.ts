@@ -1,8 +1,8 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaClient } from '../generated/prisma/client';
-import { PRISMA_CLIENT } from '../prisma/prisma.module';
-import { CreateNfcTagDto } from './dto/create-nfc-tag.dto';
-import { AssignTagDto } from './dto/assign-tag.dto';
+﻿import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
+import { CreateNfcTagDto } from './dto/create-nfc-tag.dto.js';
+import { AssignTagDto } from './dto/assign-tag.dto.js';
 
 /**
  * NfcTagsService - Gestiona las etiquetas NFC de un negocio.

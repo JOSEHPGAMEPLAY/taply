@@ -1,5 +1,5 @@
-import { Global, Module, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
-import { PrismaClient } from '../generated/prisma/client';
+﻿import { Global, Module, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
+import { PrismaClient } from '../generated/prisma/client.js';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 /**

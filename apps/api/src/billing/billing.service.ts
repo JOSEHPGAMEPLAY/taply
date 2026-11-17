@@ -1,8 +1,8 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '../generated/prisma/client';
-import { PRISMA_CLIENT } from '../prisma/prisma.module';
-import { CreateProductDto } from './dto/create-product.dto';
-import { CreateOrderDto } from './dto/create-order.dto';
+﻿import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
+import { CreateProductDto } from './dto/create-product.dto.js';
+import { CreateOrderDto } from './dto/create-order.dto.js';
 
 /**
  * BillingService - Gestiona productos y órdenes de facturación.

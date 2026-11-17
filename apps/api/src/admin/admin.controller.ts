@@ -1,10 +1,10 @@
-import { Controller, Get, Patch, Delete, Post, Param, Body, UseGuards, Request, Query } from '@nestjs/common';
+﻿import { Controller, Get, Patch, Delete, Post, Param, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { AdminService } from './admin.service';
-import { AdminAuthGuard } from './guards/admin-auth.guard';
-import { UpdateRoleDto } from './dto/update-role.dto';
-import { UpdateStatusDto } from './dto/update-status.dto';
-import { BulkActionDto } from './dto/bulk-action.dto';
+import { AdminService } from './admin.service.js';
+import { AdminAuthGuard } from './guards/admin-auth.guard.js';
+import { UpdateRoleDto } from './dto/update-role.dto.js';
+import { UpdateStatusDto } from './dto/update-status.dto.js';
+import { BulkActionDto } from './dto/bulk-action.dto.js';
 
 /**
  * AdminController - Endpoints de gestión de usuarios (solo administradores).

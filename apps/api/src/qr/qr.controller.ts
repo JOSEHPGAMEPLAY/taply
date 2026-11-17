@@ -1,8 +1,8 @@
-import { Controller, Post, Get, Param, Body, UseGuards, Request } from '@nestjs/common';
+﻿import { Controller, Post, Get, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { QrService } from './qr.service';
-import { GenerateQrDto } from './dto/generate-qr.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { QrService } from './qr.service.js';
+import { GenerateQrDto } from './dto/generate-qr.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
 /**
 * Controlador para gestión de códigos QR.

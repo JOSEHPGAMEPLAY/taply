@@ -1,5 +1,5 @@
-import { Injectable, ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+﻿import { Injectable, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 
 /**
  * AdminAuthGuard - Guard que protege las rutas requiriendo rol de administrador.

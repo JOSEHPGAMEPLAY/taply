@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
+﻿import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { PublicService } from './public.service';
-import { RecordEventDto } from './dto/record-event.dto';
+import { PublicService } from './public.service.js';
+import { RecordEventDto } from './dto/record-event.dto.js';
 
 /**
  * PublicController - Endpoints públicos sin autenticación.

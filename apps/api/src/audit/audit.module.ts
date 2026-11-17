@@ -1,6 +1,6 @@
-import { Module, Global } from '@nestjs/common';
-import { AuditService } from './audit.service';
-import { AuditInterceptor } from './audit.interceptor';
+﻿import { Module, Global } from '@nestjs/common';
+import { AuditService } from './audit.service.js';
+import { AuditInterceptor } from './audit.interceptor.js';
 
 /**
 * Módulo de auditoría global.

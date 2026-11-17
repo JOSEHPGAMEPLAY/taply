@@ -1,8 +1,8 @@
-import { Controller, Get, Query, UseGuards, Delete, BadRequestException } from '@nestjs/common';
+﻿import { Controller, Get, Query, UseGuards, Delete, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { AnalyticsService } from './analytics.service';
-import { AnalyticsQueryDto } from './dto/analytics-query.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AnalyticsService } from './analytics.service.js';
+import { AnalyticsQueryDto } from './dto/analytics-query.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
 /**
  * AnalyticsController - Endpoints de analíticas.

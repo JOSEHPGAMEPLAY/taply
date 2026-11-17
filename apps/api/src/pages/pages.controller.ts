@@ -1,9 +1,9 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+﻿import { Controller, Post, Get, Patch, Delete, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiQuery } from '@nestjs/swagger';
-import { PagesService } from './pages.service';
-import { CreatePageDto } from './dto/create-page.dto';
-import { UpdatePageDto } from './dto/update-page.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PagesService } from './pages.service.js';
+import { CreatePageDto } from './dto/create-page.dto.js';
+import { UpdatePageDto } from './dto/update-page.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
 /**
  * PagesController - Endpoints CRUD de páginas digitales.

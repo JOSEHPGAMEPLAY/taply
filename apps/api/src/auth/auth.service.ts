@@ -1,8 +1,8 @@
-import { Injectable, Inject, ConflictException, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, Inject, ConflictException, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClient } from '../generated/prisma/client';
+import { PrismaClient } from '../generated/prisma/client.js';
 import * as bcrypt from 'bcrypt';
-import { PRISMA_CLIENT } from '../prisma/prisma.module';
+import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
 
 /**
  * AuthService - Gestiona la autenticación de usuarios.

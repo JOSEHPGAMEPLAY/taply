@@ -1,8 +1,8 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaClient } from '../generated/prisma/client';
-import { PRISMA_CLIENT } from '../prisma/prisma.module';
-import { CreateBusinessDto } from './dto/create-business.dto';
-import { UpdateBusinessDto } from './dto/update-business.dto';
+﻿import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
+import { CreateBusinessDto } from './dto/create-business.dto.js';
+import { UpdateBusinessDto } from './dto/update-business.dto.js';
 
 /**
  * BusinessesService - Gestiona los negocios del usuario autenticado.

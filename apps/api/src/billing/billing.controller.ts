@@ -1,9 +1,9 @@
-import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
+﻿import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
-import { BillingService } from './billing.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { CreateOrderDto } from './dto/create-order.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { BillingService } from './billing.service.js';
+import { CreateProductDto } from './dto/create-product.dto.js';
+import { CreateOrderDto } from './dto/create-order.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
 /**
  * BillingController - Endpoints de facturación.
