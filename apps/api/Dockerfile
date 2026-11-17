@@ -5,8 +5,8 @@ RUN corepack enable && \
     adduser --system --uid 1001 nodejs
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package.json package-lock.json ./
+# Copy package.json first for better caching (npm install will generate package-lock.json)
+COPY package.json ./
 # Copy source code
 COPY . .
 
