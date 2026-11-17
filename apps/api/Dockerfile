@@ -6,11 +6,11 @@ RUN corepack enable && \
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 # Copy source code
 COPY . .
 
-# Install dependencies
+# Install all dependencies
 RUN npm install
 
 # Generate Prisma Client (needs DATABASE_URL for Prisma 7 config)
@@ -30,14 +30,12 @@ WORKDIR /app
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/src/generated ./src/generated
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nodejs:nodejs /app/package-lock.json ./package-lock.json
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
 # Install production dependencies only
 RUN npm install --omit=dev
-
-# Generate Prisma Client for production runtime
-RUN DATABASE_URL=postgresql://prisma:prisma@localhost:5432/taply ./node_modules/.bin/prisma generate
 
 # Production config
 ENV NODE_ENV=production
