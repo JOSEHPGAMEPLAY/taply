@@ -1,49 +1,66 @@
-# Stage 1: Build
+# ============================================================
+# Taply Web - Dockerfile
+# Node 24 + Next.js 16 + TailwindCSS 4
+# Multi-stage build: builder → production
+# ============================================================
+
+# ---------------------
+# Stage 1: Builder
+# ---------------------
 FROM node:24-alpine AS builder
-RUN corepack enable && \
-    addgroup --system --gid 1001 nodejs && \
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
+
 WORKDIR /app
 
-# Copy package files first for better caching
+# Copy package files first for better layer caching
+# If package.json hasn't changed, npm ci is skipped
 COPY package.json package-lock.json* ./
-# Copy source code
+
+# Install all dependencies
+RUN --mount=type=cache,target=/root/.npm \
+    if [ -f package-lock.json ]; then npm ci; else npm install --package-lock-only && npm ci; fi
+
+# Copy source code (changes more frequently than package.json)
 COPY . .
 
-# Install dependencies
-RUN npm install
-
-# NEXT_PUBLIC_* variables must be available at BUILD time for Next.js to bake them into the JS bundles.
-# Pass via docker compose build arg: docker compose build web --build-arg NEXT_PUBLIC_API_URL=...
-# Or set in .env and reference in docker-compose.yml under build.args.
+# NEXT_PUBLIC_* variables must be set at build time for Next.js
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Build Next.js with standalone output
-# Tailwind CSS genera los estilos automáticamente durante este paso:
-# 1. PostCSS procesa globals.css
-# 2. Tailwind escanea los archivos .tsx y genera las clases CSS necesarias
-# 3. Next.js compila todo en .next/static/css/ y .next/static/js/
-# 4. El standalone output copia solo lo necesario en .next/standalone/
+# - TypeScript → JavaScript
+# - TailwindCSS → CSS (via PostCSS)
+# - Standalone output for minimal production image
 RUN npm run build
 
+# ---------------------
 # Stage 2: Production
+# ---------------------
 FROM node:24-alpine AS production
-RUN corepack enable && \
-    addgroup --system --gid 1001 nodejs && \
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
+
 WORKDIR /app
 
-# Copy built Next.js standalone output from builder
+# Copy only the standalone output from builder
+# Next.js standalone includes only the files needed for production
 COPY --from=builder --chown=nodejs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nodejs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nodejs:nodejs /app/public ./public
 
-# Production config
+# Production environment
 ENV NODE_ENV=production
 USER nodejs
 EXPOSE 3000
 
-# Next.js standalone output requires running the server.js directly,
-# not 'next start' which is incompatible with output: standalone.
+# Healthcheck: verify Next.js is responding
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD node -e "const http = require('http'); const req = http.get('http://localhost:3000/', (res) => { process.exit(res.statusCode < 500 ? 0 : 1) }); req.on('error', () => process.exit(1));"
+
+# Start Next.js standalone server
 CMD ["node", "server.js"]

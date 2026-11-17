@@ -2,10 +2,11 @@
 node_modules/
 npm-debug.log*
 
-# Lock files - not versioned; each Docker build generates its own compatible with Node 24
+# Lock files - versioned for reproducible Docker builds with Node 24
+# (Generated inside Docker because local Node 22 is incompatible with NestJS 12)
 /package-lock.json
-apps/api/package-lock.json
-apps/web/package-lock.json
+!apps/api/package-lock.json
+!apps/web/package-lock.json
 
 # Build outputs
 dist/
