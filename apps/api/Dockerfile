@@ -13,8 +13,8 @@ COPY . .
 # Install dependencies
 RUN npm install
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Generate Prisma Client using locally installed version
+RUN ./node_modules/.bin/prisma generate
 
 # Build the API
 RUN npm run build
@@ -34,8 +34,8 @@ COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 # Install production dependencies only
 RUN npm install --omit=dev
 
-# Generate Prisma Client for production runtime
-RUN npx prisma generate
+# Generate Prisma Client for production runtime using locally installed version
+RUN ./node_modules/.bin/prisma generate
 
 # Production config
 ENV NODE_ENV=production
