@@ -1,6 +1,6 @@
 ﻿import { Injectable } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { PrismaClient, Prisma } from '../generated/prisma/client.js';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto.js';
 

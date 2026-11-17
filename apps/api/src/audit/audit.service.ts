@@ -1,5 +1,5 @@
 ﻿import { Injectable, Inject } from '@nestjs/common';
-import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
 
 /**

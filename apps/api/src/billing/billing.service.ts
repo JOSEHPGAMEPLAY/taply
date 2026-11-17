@@ -1,5 +1,5 @@
 ﻿import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
