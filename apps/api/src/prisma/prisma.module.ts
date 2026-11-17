@@ -1,5 +1,6 @@
 import { Global, Module, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 /**
  * Token inyectable para el cliente Prisma.
@@ -19,7 +20,10 @@ export const PRISMA_CLIENT = 'PrismaClient';
   providers: [
     {
       provide: PRISMA_CLIENT,
-      useFactory: () => new PrismaClient(),
+      useFactory: () => {
+        const adapter = new PrismaPg(process.env.DATABASE_URL!);
+        return new PrismaClient({ adapter });
+      },
     },
   ],
   exports: [PRISMA_CLIENT],

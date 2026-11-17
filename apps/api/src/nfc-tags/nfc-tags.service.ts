@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module';
 import { CreateNfcTagDto } from './dto/create-nfc-tag.dto';
 import { AssignTagDto } from './dto/assign-tag.dto';

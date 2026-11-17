@@ -23,8 +23,10 @@ export class HealthService {
 
   private async checkDatabase(): Promise<boolean> {
     try {
-      const { PrismaClient } = await import('@prisma/client');
-      const prisma = new PrismaClient();
+      const { PrismaClient } = await import('../generated/prisma/client');
+      const { PrismaPg } = await import('@prisma/adapter-pg');
+      const adapter = new PrismaPg(process.env.DATABASE_URL!);
+      const prisma = new PrismaClient({ adapter });
       await prisma.$queryRaw`SELECT 1`;
       await prisma.$disconnect();
       return true;

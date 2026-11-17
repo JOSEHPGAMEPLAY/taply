@@ -13,8 +13,8 @@ COPY . .
 # Install dependencies
 RUN npm install
 
-# Generate Prisma Client using locally installed version
-RUN ./node_modules/.bin/prisma generate
+# Generate Prisma Client (needs DATABASE_URL for Prisma 7 config)
+RUN DATABASE_URL=postgresql://prisma:prisma@localhost:5432/taply ./node_modules/.bin/prisma generate
 
 # Build the API
 RUN npm run build
@@ -26,16 +26,18 @@ RUN corepack enable && \
     adduser --system --uid 1001 nodejs
 WORKDIR /app
 
-# Copy built code from builder
+# Copy built code and generated Prisma client from builder
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/src/generated ./src/generated
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nodejs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
 # Install production dependencies only
 RUN npm install --omit=dev
 
-# Generate Prisma Client for production runtime using locally installed version
-RUN ./node_modules/.bin/prisma generate
+# Generate Prisma Client for production runtime
+RUN DATABASE_URL=postgresql://prisma:prisma@localhost:5432/taply ./node_modules/.bin/prisma generate
 
 # Production config
 ENV NODE_ENV=production

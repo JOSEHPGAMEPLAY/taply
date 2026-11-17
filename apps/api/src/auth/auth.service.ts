@@ -1,6 +1,6 @@
 import { Injectable, Inject, ConflictException, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PRISMA_CLIENT } from '../prisma/prisma.module';
 
