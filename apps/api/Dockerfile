@@ -1,21 +1,18 @@
 # Stage 1: Build
 FROM node:24-alpine AS builder
-ARG DATABASE_URL=postgresql://prisma:prisma@localhost:5432/taply
 RUN corepack enable && \
     addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 WORKDIR /app
 
-# Copy package.json first for better caching (npm install will generate package-lock.json)
-COPY package.json ./
-# Copy source code
+# Copy all source code first (no package-lock.json — npm will generate a fresh one compatible with Node 24)
 COPY . .
 
-# Install all dependencies
+# Install dependencies (npm install generates a fresh package-lock.json)
 RUN npm install
 
-# Generate Prisma Client (pin to prisma@7 to avoid Prisma 8 RC which has no "generate" command)
-RUN DATABASE_URL=${DATABASE_URL} npx prisma@7 generate
+# Generate Prisma Client (DATABASE_URL placeholder is enough for generate, real URL is set at runtime)
+RUN DATABASE_URL=postgresql://prisma:prisma@localhost:5432/taply ./node_modules/.bin/prisma generate --schema=./prisma/schema.prisma
 
 # Build the API
 RUN npm run build
@@ -27,15 +24,14 @@ RUN corepack enable && \
     adduser --system --uid 1001 nodejs
 WORKDIR /app
 
-# Copy built code and generated Prisma client from builder
+# Copy built code, generated Prisma client, and source from builder
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/src/generated ./src/generated
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nodejs:nodejs /app/package-lock.json ./package-lock.json
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
-# Install production dependencies only
+# Install production dependencies only (npm generates its own lock file)
 RUN npm install --omit=dev
 
 # Production config
