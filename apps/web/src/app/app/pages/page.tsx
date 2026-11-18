@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   FileText,
   Plus,
@@ -10,9 +11,9 @@ import {
   Check,
   AlertCircle,
   Loader2,
-  Eye,
-  EyeOff,
   MousePointerClick,
+  ChevronDown,
+  Settings,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -51,6 +52,7 @@ interface Business {
  * Permite crear, listar, editar y publicar páginas digitales.
  */
 export default function PagesPage() {
+  const router = useRouter();
   const [pages, setPages] = useState<Page[]>([]);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +66,7 @@ export default function PagesPage() {
   const [buttons, setButtons] = useState<PageButton[]>([]);
   const [newButton, setNewButton] = useState({ key: '', label: '', url: '', icon: '' });
   const [savingButtons, setSavingButtons] = useState(false);
+  const [openStatusMenu, setOpenStatusMenu] = useState<{ pageId: string; rect: DOMRect } | null>(null);
 
   /**
    * Carga las páginas y negocios desde la API.
@@ -145,18 +148,18 @@ export default function PagesPage() {
   };
 
   /**
-   * Publica o despublica una página.
+   * Cambia el estado de la página.
    */
-  const togglePublish = async (page: Page) => {
-    const isPublished = page.status === 'PUBLISHED';
+  const changePageStatus = async (page: Page, newStatus: string) => {
     try {
-      if (!isPublished) {
-        await api.publishPage(page.id, page.businessId);
-        showSuccess('Página publicada correctamente');
-      } else {
-        await api.unpublishPage(page.id, page.businessId);
-        showSuccess('Página despublicada correctamente');
-      }
+      await api.updatePageStatus(page.id, page.businessId, newStatus);
+      const statusLabels: Record<string, string> = {
+        PUBLISHED: 'Publicada',
+        DRAFT: 'Borrador',
+        PAUSED: 'Pausada',
+        ARCHIVED: 'Archivada',
+      };
+      showSuccess(`Página cambiada a ${statusLabels[newStatus] || newStatus}`);
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cambiar el estado');
@@ -365,19 +368,29 @@ export default function PagesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              if (openStatusMenu?.pageId === page.id) {
+                                setOpenStatusMenu(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setOpenStatusMenu({ pageId: page.id, rect });
+                              }
+                            }}
+                            className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            title="Cambiar estado"
+                          >
+                            {statusBadge(page.status)}
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                        </div>
                         <button
-                          onClick={() => togglePublish(page)}
+                          onClick={() => router.push(`/app/pages/${page.id}/buttons`)}
                           className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                          title={page.status === 'PUBLISHED' ? 'Despublicar' : 'Publicar'}
+                          title="Gestionar botones"
                         >
-                          {page.status === 'PUBLISHED' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={() => openButtonEditor(page)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                          title="Editar botones"
-                        >
-                          <Pencil className="w-4 h-4" />
+                          <Settings className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(page)}
@@ -590,6 +603,39 @@ export default function PagesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Status dropdown portal — rendered outside the table to avoid overflow clipping */}
+      {openStatusMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpenStatusMenu(null)}
+          />
+          <div
+            className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[140px]"
+            style={{
+              top: openStatusMenu.rect.bottom + window.scrollY + 4,
+              left: openStatusMenu.rect.left + window.scrollX,
+            }}
+          >
+            {[{ value: 'DRAFT', label: 'Borrador' }, { value: 'PUBLISHED', label: 'Publicada' }, { value: 'PAUSED', label: 'Pausada' }, { value: 'ARCHIVED', label: 'Archivada' }].map((s) => (
+              <button
+                key={s.value}
+                onClick={() => {
+                  const page = pages.find((p) => p.id === openStatusMenu.pageId);
+                  if (page) {
+                    changePageStatus(page, s.value);
+                  }
+                  setOpenStatusMenu(null);
+                }}
+                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
