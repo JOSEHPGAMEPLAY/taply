@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Github, Linkedin, Mail } from 'lucide-react';
+import { GitHub, LinkedIn, Mail } from 'lucide-react';
 
 /**
  * Footer de la landing page de Taply.
@@ -38,7 +38,7 @@ export default function Footer() {
                 className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
                 aria-label="GitHub"
               >
-                <Github className="h-5 w-5" />
+                <GitHub className="h-5 w-5" />
               </Link>
               <Link
                 href="https://www.linkedin.com/in/josehernandoverajaimes/"
@@ -47,7 +47,7 @@ export default function Footer() {
                 className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
                 aria-label="LinkedIn"
               >
-                <Linkedin className="h-5 w-5" />
+                <LinkedIn className="h-5 w-5" />
               </Link>
               <Link
                 href="mailto:jose.kj11@hotmail.com"
