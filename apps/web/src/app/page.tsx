@@ -97,7 +97,7 @@ export default function Home() {
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div className="w-12 h-12 bg-blue-400/20 rounded-xl flex items-center justify-center mb-4">
                 <Image
-                  src="/brand/features-icons.png"
+                  src="/brand/icon-nfc.png"
                   alt="Etiquetas NFC"
                   width={32}
                   height={32}
@@ -112,7 +112,7 @@ export default function Home() {
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div className="w-12 h-12 bg-cyan-400/20 rounded-xl flex items-center justify-center mb-4">
                 <Image
-                  src="/brand/features-icons.png"
+                  src="/brand/icon-qr.png"
                   alt="Códigos QR"
                   width={32}
                   height={32}
@@ -127,7 +127,7 @@ export default function Home() {
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div className="w-12 h-12 bg-purple-400/20 rounded-xl flex items-center justify-center mb-4">
                 <Image
-                  src="/brand/features-icons.png"
+                  src="/brand/icon-analytics.png"
                   alt="Analíticas"
                   width={32}
                   height={32}
