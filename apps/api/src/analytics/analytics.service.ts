@@ -1,5 +1,6 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto.js';
@@ -42,5 +43,21 @@ export class AnalyticsService {
     });
 
     return { deleted: result.count, retentionMonths, cutoffDate: cutoffDate.toISOString() };
+  }
+
+  /**
+   * Cron job que se ejecuta cada noche a las 3 AM para eliminar eventos antiguos.
+   * Elimina eventos mayores a 12 meses automáticamente.
+   */
+  @Cron('0 3 * * *')
+  async autoPruneEvents() {
+    const logger = new Logger('AnalyticsService');
+    logger.log('Iniciando pruning automático de eventos antiguos...');
+    try {
+      const result = await this.pruneEvents(12);
+      logger.log(`Pruning completado: ${result.deleted} eventos eliminados (corte: ${result.cutoffDate})`);
+    } catch (error) {
+      logger.error('Error al hacer pruning de eventos', error);
+    }
   }
 }

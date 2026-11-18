@@ -166,6 +166,31 @@ export class PagesService {
     });
   }
 
+  /**
+   * Despublica una página, cambiando su estado a DRAFT y marcando la versión publicada como SUPERSEDED.
+   */
+  async unpublish(businessId: string, pageId: string) {
+    await this.verifyOwnership(businessId, pageId);
+
+    const page = await this.prisma.page.findUnique({ where: { id: pageId } });
+    if (!page) throw new NotFoundException('Página no encontrada');
+    if (page.status !== 'PUBLISHED') throw new BadRequestException('La página no está publicada');
+
+    // Marcar la versión publicada actual como SUPERSEDED
+    if (page.publishedVersionId) {
+      await this.prisma.pageVersion.update({
+        where: { id: page.publishedVersionId },
+        data: { status: 'SUPERSEDED' },
+      });
+    }
+
+    // Cambiar el estado de la página a DRAFT y quitar la versión publicada
+    return this.prisma.page.update({
+      where: { id: pageId },
+      data: { status: 'DRAFT', publishedVersionId: null },
+    });
+  }
+
   private async verifyOwnership(businessId: string, pageId: string) {
     const page = await this.prisma.page.findUnique({ where: { id: pageId } });
     if (!page) throw new NotFoundException('Página no encontrada');

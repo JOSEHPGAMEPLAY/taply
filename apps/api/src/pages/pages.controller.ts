@@ -87,4 +87,14 @@ export class PagesController {
   async publish(@Param('id') id: string, @Request() request: any, @Query('businessId') businessId: string) {
     return this.pagesService.publish(businessId, id);
   }
+
+  @Post(':id/unpublish')
+  @ApiOperation({ summary: 'Despublicar página', description: 'Despublica una página, cambiando su estado a DRAFT y marcando la versión publicada como SUPERSEDED. Requiere businessId como query param.' })
+  @ApiQuery({ name: 'businessId', required: true, type: String, description: 'ID del negocio' })
+  @ApiResponse({ status: 200, description: 'Página despublicada exitosamente' })
+  @ApiResponse({ status: 404, description: 'Página no encontrada' })
+  @ApiResponse({ status: 400, description: 'La página no está publicada' })
+  async unpublish(@Param('id') id: string, @Request() request: any, @Query('businessId') businessId: string) {
+    return this.pagesService.unpublish(businessId, id);
+  }
 }

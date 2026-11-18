@@ -222,6 +222,15 @@ export const api = {
     return apiRequest<unknown>('POST', `/pages/${id}/publish?businessId=${businessId}`);
   },
 
+  /**
+   * POST /pages/:id/unpublish?businessId=<uuid> (requiere JWT)
+   * NOTE: businessId va como query param
+   * Response: Página despublicada (status DRAFT, publishedVersionId null)
+   */
+  async unpublishPage(id: string, businessId: string) {
+    return apiRequest<unknown>('POST', `/pages/${id}/unpublish?businessId=${businessId}`);
+  },
+
   // ==========================================
   // NFC Tags — businessId como QUERY PARAM
   // ==========================================
@@ -380,5 +389,43 @@ export const api = {
    */
   async getAdminStats() {
     return apiRequest<{ total: number; admins: number; users: number; latestUserAt: string | null }>('GET', '/admin/users/stats');
+  },
+
+  // ==========================================
+  // Templates — Requiere JWT, sin businessId
+  // ==========================================
+
+  /**
+   * GET /templates (requiere JWT)
+   * Response: Array de templates globales
+   */
+  async getTemplates() {
+    return apiRequest<Array<{ id: string; name: string; description?: string; config?: Record<string, any>; version: string; createdAt: string }>>('GET', '/templates');
+  },
+
+  /**
+   * POST /templates (requiere JWT)
+   * Body: { name: string, description?: string, config?: object, version?: string }
+   * Response: Template creado
+   */
+  async createTemplate(data: { name: string; description?: string; config?: Record<string, any>; version?: string }) {
+    return apiRequest<{ id: string; name: string; description?: string; config?: Record<string, any>; version: string }>('POST', '/templates', data);
+  },
+
+  /**
+   * PATCH /templates/:id (requiere JWT)
+   * Body: { name?: string, description?: string, config?: object, version?: string }
+   * Response: Template actualizado
+   */
+  async updateTemplate(id: string, data: { name?: string; description?: string; config?: Record<string, any>; version?: string }) {
+    return apiRequest<{ id: string; name: string; description?: string; config?: Record<string, any>; version: string }>('PATCH', `/templates/${id}`, data);
+  },
+
+  /**
+   * DELETE /templates/:id (requiere JWT)
+   * Response: { message: 'Template eliminado correctamente' }
+   */
+  async deleteTemplate(id: string) {
+    return apiRequest<{ message: string }>('DELETE', `/templates/${id}`);
   },
 };

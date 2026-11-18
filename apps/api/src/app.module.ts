@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -12,6 +12,7 @@ import { QrModule } from './qr/qr.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { MailModule } from './mail/mail.module.js';
+import { TemplatesModule } from './templates/templates.module.js';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { MailModule } from './mail/mail.module.js';
     AuditModule,
     AdminModule,
     MailModule,
+    TemplatesModule,
   ],
 })
 export class AppModule {}

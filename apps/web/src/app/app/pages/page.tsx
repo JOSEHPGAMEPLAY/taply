@@ -154,8 +154,8 @@ export default function PagesPage() {
         await api.publishPage(page.id, page.businessId);
         showSuccess('Página publicada correctamente');
       } else {
-        // For unpublish, we'll use a placeholder — the API needs an unpublish endpoint
-        showSuccess('Funcionalidad de despublicar en desarrollo');
+        await api.unpublishPage(page.id, page.businessId);
+        showSuccess('Página despublicada correctamente');
       }
       await loadData();
     } catch (err) {
