@@ -70,12 +70,12 @@ export default function Footer() {
 
           {/* Links Sociales */}
           <div className="flex flex-col items-center gap-4 md:items-end">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Link
                 href="https://github.com/JOSEHPGAMEPLAY/taply"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
                 aria-label="GitHub"
               >
                 <GitHubIcon className="h-5 w-5" />
@@ -84,27 +84,19 @@ export default function Footer() {
                 href="https://www.linkedin.com/in/josehernandoverajaimes/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
                 aria-label="LinkedIn"
               >
                 <LinkedInIcon className="h-5 w-5" />
               </Link>
               <Link
                 href="mailto:jose.kj11@hotmail.com"
-                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
                 aria-label="Email"
               >
                 <Mail className="h-5 w-5" />
               </Link>
             </div>
-            <p className="text-sm text-gray-400">
-              <Link
-                href="mailto:jose.kj11@hotmail.com"
-                className="transition-colors hover:text-cyan-400"
-              >
-                jose.kj11@hotmail.com
-              </Link>
-            </p>
           </div>
         </div>
 
