@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Plus,
@@ -41,6 +41,7 @@ interface PageData {
  */
 export default function ButtonsPage({ params }: { params: Promise<{ pageId: string }> }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState<PageData | null>(null);
   const [buttons, setButtons] = useState<PageButton[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,11 +59,16 @@ export default function ButtonsPage({ params }: { params: Promise<{ pageId: stri
         setLoading(true);
         // Unwrap params promise (Next.js 15+)
         const { pageId } = await params;
-        const pageData = await api.getPage(pageId, '');
+        // Obtener businessId de los query params de la URL
+        const businessId = searchParams.get('businessId') || '';
+        if (!businessId) {
+          setError('Falta el ID del negocio. Accede desde la lista de páginas.');
+          setLoading(false);
+          return;
+        }
+        const pageData = await api.getPage(pageId, businessId);
         const p = pageData as any;
 
-        // Buscar businessId en la página
-        const businessId = p?.businessId || '';
         setPage({
           id: p?.id || pageId,
           slug: p?.slug || '',
@@ -84,7 +90,7 @@ export default function ButtonsPage({ params }: { params: Promise<{ pageId: stri
       }
     }
     loadPage();
-  }, [params]);
+  }, [params, searchParams]);
 
   const showSuccess = (message: string) => {
     setSuccessMessage(message);
