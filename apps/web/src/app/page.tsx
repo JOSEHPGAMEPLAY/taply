@@ -1,20 +1,28 @@
+import Image from 'next/image';
 import Link from 'next/link';
+import ContactForm from '@/components/contact-form';
+import Footer from '@/components/footer';
 
 /**
  * Página principal de Taply.
- * Landing page con botones de login y registro.
+ * Landing page con brand kit integrado, formulario de contacto y footer actualizado.
  */
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900">
+    <div className="min-h-screen bg-[#0a0a1a]">
       {/* Navbar */}
       <nav className="flex items-center justify-between px-6 py-4 md:px-12">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <span className="text-white text-xl font-bold">T</span>
-          </div>
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src="/brand/isotipo.svg"
+            alt="Taply Logo"
+            width={40}
+            height={40}
+            className="h-10 w-10"
+            priority
+          />
           <span className="text-white text-2xl font-bold">Taply</span>
-        </div>
+        </Link>
         <div className="flex items-center gap-3">
           <Link
             href="/login"
@@ -31,9 +39,22 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <main className="flex flex-col items-center justify-center px-6 pt-16 pb-32 md:pt-24">
-        <div className="max-w-4xl text-center">
+      {/* Hero Section con imagen de fondo */}
+      <main className="relative flex flex-col items-center justify-center px-6 pt-16 pb-32 md:pt-24">
+        {/* Background image with overlay */}
+        <div className="pointer-events-none absolute inset-0">
+          <Image
+            src="/brand/hero-bg.png"
+            alt=""
+            fill
+            className="object-cover"
+            priority
+            quality={90}
+          />
+          <div className="absolute inset-0 bg-[#0a0a1a]/70" />
+        </div>
+
+        <div className="relative z-10 max-w-4xl text-center">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-white/90 text-sm mb-8">
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
@@ -71,11 +92,17 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Features */}
+          {/* Features con iconos del brand kit */}
           <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div className="w-12 h-12 bg-blue-400/20 rounded-xl flex items-center justify-center mb-4">
-                <span className="text-2xl">📱</span>
+                <Image
+                  src="/brand/features-icons.png"
+                  alt="Etiquetas NFC"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8"
+                />
               </div>
               <h3 className="text-white text-lg font-semibold mb-2">Etiquetas NFC</h3>
               <p className="text-blue-100/70 text-sm leading-relaxed">
@@ -84,7 +111,13 @@ export default function Home() {
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div className="w-12 h-12 bg-cyan-400/20 rounded-xl flex items-center justify-center mb-4">
-                <span className="text-2xl">🔗</span>
+                <Image
+                  src="/brand/features-icons.png"
+                  alt="Códigos QR"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8"
+                />
               </div>
               <h3 className="text-white text-lg font-semibold mb-2">Códigos QR</h3>
               <p className="text-blue-100/70 text-sm leading-relaxed">
@@ -93,7 +126,13 @@ export default function Home() {
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div className="w-12 h-12 bg-purple-400/20 rounded-xl flex items-center justify-center mb-4">
-                <span className="text-2xl">📊</span>
+                <Image
+                  src="/brand/features-icons.png"
+                  alt="Analíticas"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8"
+                />
               </div>
               <h3 className="text-white text-lg font-semibold mb-2">Analíticas</h3>
               <p className="text-blue-100/70 text-sm leading-relaxed">
@@ -104,13 +143,11 @@ export default function Home() {
         </div>
       </main>
 
+      {/* Formulario de Contacto */}
+      <ContactForm />
+
       {/* Footer */}
-      <footer className="border-t border-white/10 px-6 py-6 md:px-12">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-blue-200/60">
-          <p>© 2025 Taply. Todos los derechos reservados.</p>
-          <p>Hecho con ❤️ en Colombia</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
