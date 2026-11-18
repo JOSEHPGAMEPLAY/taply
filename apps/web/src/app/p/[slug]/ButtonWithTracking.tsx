@@ -1,5 +1,8 @@
 'use client';
 
+import { getIconByKey } from '@/lib/icon-map';
+import { MousePointerClick } from 'lucide-react';
+
 /**
  * Botón con tracking de clicks para la página pública.
  * Registra un evento BUTTON_CLICK antes de redirigir al URL del botón.
@@ -46,6 +49,10 @@ export default function ButtonWithTracking({
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  // Buscar el icono en el mapeo de lucide-react
+  const iconInfo = icon ? getIconByKey(icon) : undefined;
+  const IconComponent = iconInfo?.component;
+
   return (
     <button
       type="button"
@@ -53,7 +60,14 @@ export default function ButtonWithTracking({
       className="block w-full bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-left hover:shadow-md hover:border-blue-200 transition-all group"
     >
       <div className="flex items-center gap-3">
-        {icon && <span className="text-xl">{icon}</span>}
+        {IconComponent ? (
+          <div className="flex items-center justify-center w-8 h-8 bg-blue-50 rounded-lg">
+            <IconComponent className="w-4 h-4 text-blue-600" />
+          </div>
+        ) : icon ? (
+          // Fallback: si el icono no está en el mapeo, mostrarlo como texto
+          <span className="text-xl">{icon}</span>
+        ) : null}
         <span className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
           {label}
         </span>
