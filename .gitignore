@@ -50,8 +50,10 @@ apps/api/prisma/dev.db-journal
 # Docker
 docker-compose.local.*.yml
 
-# Junie agent sessions and plans
+# Junie agent sessions (ignored) but keep guidelines and plans
 .junie/
+!.junie/guidelines/
+!.junie/plans/
 
 # Project plan documents (kept locally, not versioned)
 TAPLY_MASTER_PLAN.md
