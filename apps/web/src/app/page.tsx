@@ -39,20 +39,31 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section con imagen de fondo */}
-      <main className="relative flex flex-col items-center justify-center px-6 pt-16 pb-32 md:pt-24">
-        {/* Background image with overlay */}
-        <div className="pointer-events-none absolute inset-0">
-          <Image
-            src="/brand/hero-bg.png"
-            alt=""
-            fill
-            className="object-cover"
-            priority
-            quality={90}
-          />
-          <div className="absolute inset-0 bg-[#0a0a1a]/70" />
-        </div>
+      {/* Hero Section con fondo moderno */}
+      <main className="relative flex flex-col items-center justify-center overflow-hidden px-6 pt-16 pb-32 md:pt-24">
+        {/* Background: gradientes CSS modernos con glows y malla */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: `
+            radial-gradient(ellipse 80% 60% at 50% 0%, rgba(37, 99, 235, 0.35) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 50% at 80% 20%, rgba(0, 212, 255, 0.2) 0%, transparent 50%),
+            radial-gradient(ellipse 50% 40% at 20% 60%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+            linear-gradient(180deg, #0a0f3c 0%, #0a0a1a 100%)
+          `
+        }} />
+        {/* Grid pattern sutil */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        {/* Glow central animado */}
+        <div className="pointer-events-none absolute -top-40 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -top-20 right-1/4 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
 
         <div className="relative z-10 max-w-4xl text-center">
           {/* Badge */}
