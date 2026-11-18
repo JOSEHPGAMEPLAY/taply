@@ -80,6 +80,46 @@ export class MailService {
   }
 
   /**
+   * Envía email desde el formulario de contacto público.
+   * Recibe un mensaje de un visitante y lo reenvía al equipo de Taply.
+   */
+  async sendContactEmail(
+    fromName: string,
+    fromEmail: string,
+    message: string,
+  ): Promise<void> {
+    const to = process.env.CONTACT_EMAIL || 'jose.kj11@hotmail.com';
+    const from = process.env.EMAIL_FROM || 'Taply <noreply@taply.com>';
+
+    const html = this.buildContactHtml(fromName, fromEmail, message);
+
+    try {
+      const info = await this.transporter.sendMail({
+        from,
+        to,
+        subject: `Nuevo mensaje de contacto de ${fromName} — Taply`,
+        text: `Nombre: ${fromName}\nEmail: ${fromEmail}\n\nMensaje:\n${message}`,
+        html,
+        replyTo: fromEmail,
+      });
+
+      if (typeof info === 'string') {
+        this.logger.log(`[DEV MODE] Email de contacto de ${fromName} (${fromEmail}): ${info}`);
+      } else {
+        this.logger.log(
+          `Email de contacto enviado de ${fromName} (${fromEmail}) (messageId: ${info.messageId})`,
+        );
+      }
+    } catch (error: any) {
+      this.logger.error(
+        `Error enviando email de contacto de ${fromEmail}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Construye el HTML del email de restablecimiento de contraseña.
    */
   private buildPasswordResetHtml(resetUrl: string): string {
@@ -116,6 +156,64 @@ export class MailService {
             </p>
             <p>Si no solicitaste este cambio, puedes ignorar este email. Tu contraseña no cambiará.</p>
             <p class="note">⚠️ Este enlace expirará en <strong>1 hora</strong>.</p>
+          </div>
+          <div class="footer">
+            <p>© 2026 Taply. Todos los derechos reservados.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `.trim();
+  }
+
+  /**
+   * Construye el HTML del email de contacto desde el formulario público.
+   */
+  private buildContactHtml(
+    fromName: string,
+    fromEmail: string,
+    message: string,
+  ): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a1a; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+          .header { background: linear-gradient(135deg, #0066FF 0%, #00D4FF 100%); padding: 32px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 24px; }
+          .content { padding: 32px; }
+          .content p { color: #333333; line-height: 1.6; font-size: 16px; margin: 0 0 16px; }
+          .field { background: #f8f9fa; border-left: 4px solid #0066FF; padding: 16px; margin: 16px 0; border-radius: 4px; }
+          .field-label { color: #0066FF; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+          .field-value { color: #333333; font-size: 15px; margin-top: 4px; word-break: break-word; }
+          .message-box { background: #f0f7ff; border: 1px solid #d0e3ff; padding: 20px; margin: 16px 0; border-radius: 8px; white-space: pre-wrap; }
+          .footer { background: #0a0a1a; padding: 24px; text-align: center; }
+          .footer p { color: #888888; font-size: 12px; margin: 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📩 Nuevo Mensaje de Contacto</h1>
+          </div>
+          <div class="content">
+            <p>Has recibido un nuevo mensaje desde el formulario de contacto de Taply.</p>
+            <div class="field">
+              <div class="field-label">Nombre</div>
+              <div class="field-value">${fromName}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Correo Electrónico</div>
+              <div class="field-value"><a href="mailto:${fromEmail}">${fromEmail}</a></div>
+            </div>
+            <div class="field">
+              <div class="field-label">Mensaje</div>
+              <div class="message-box">${message}</div>
+            </div>
           </div>
           <div class="footer">
             <p>© 2026 Taply. Todos los derechos reservados.</p>

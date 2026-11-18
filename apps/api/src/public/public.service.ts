@@ -1,7 +1,9 @@
-﻿import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
+import { MailService } from '../mail/mail.service.js';
 import { RecordEventDto } from './dto/record-event.dto.js';
+import { ContactDto } from './dto/contact.dto.js';
 
 /**
  * PublicService - Maneja los endpoints públicos sin autenticación.
@@ -12,7 +14,10 @@ import { RecordEventDto } from './dto/record-event.dto.js';
  */
 @Injectable()
 export class PublicService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    private readonly mailService: MailService,
+  ) {}
 
   /**
    * Resuelve un token NFC y devuelve la información de la página asignada.
@@ -204,5 +209,19 @@ export class PublicService {
       pageId: event.pageId,
       createdAt: event.createdAt,
     };
+  }
+
+  /**
+   * Envía un email desde el formulario de contacto público.
+   *
+   * Recibe los datos del formulario y los reenvía al equipo de Taply
+   * usando el MailService.
+   *
+   * @param dto - Datos del formulario de contacto
+   * @returns Confirmación de envío
+   */
+  async sendContactEmail(dto: ContactDto) {
+    await this.mailService.sendContactEmail(dto.name, dto.email, dto.message);
+    return { message: 'Mensaje enviado exitosamente' };
   }
 }

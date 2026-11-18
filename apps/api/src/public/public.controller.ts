@@ -1,7 +1,8 @@
-﻿import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { PublicService } from './public.service.js';
 import { RecordEventDto } from './dto/record-event.dto.js';
+import { ContactDto } from './dto/contact.dto.js';
 
 /**
  * PublicController - Endpoints públicos sin autenticación.
@@ -74,5 +75,23 @@ export class PublicController {
   @ApiResponse({ status: 400, description: 'Negocio no activo o sin versión publicada' })
   async getPublicPage(@Param('slug') slug: string) {
     return this.publicService.getPublicPage(slug);
+  }
+
+  /**
+   * Envía un mensaje de contacto desde el formulario público.
+   *
+   * Recibe los datos del formulario (nombre, email, mensaje) y los reenvía
+   * al equipo de Taply por correo electrónico.
+   *
+   * @param dto - Datos del formulario de contacto
+   * @returns Confirmación de envío
+   */
+  @Post('contact')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Enviar mensaje de contacto desde la página pública' })
+  @ApiResponse({ status: 200, description: 'Mensaje enviado exitosamente' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  async sendContact(@Body() dto: ContactDto) {
+    return this.publicService.sendContactEmail(dto);
   }
 }
