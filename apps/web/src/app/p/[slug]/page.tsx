@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import ButtonWithTracking from './ButtonWithTracking';
 
 /**
  * Página pública de un negocio.
  * Carga datos reales de la API pública y muestra perfil, botones y registra PAGE_VIEW.
+ * Cada click en un botón registra un evento BUTTON_CLICK antes de redirigir.
  */
 export default async function PublicPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -47,6 +49,7 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
   }
 
   const business = data?.business;
+  const pageId = data?.page?.id;
   const rawButtons = data?.publishedVersion?.buttons;
   const buttons: Array<{ key: string; label: string; url: string; icon?: string }> = Array.isArray(rawButtons) ? rawButtons : [];
   const initial = business?.name?.charAt(0)?.toUpperCase() || slug.charAt(0).toUpperCase();
@@ -86,21 +89,14 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
           <div className="mt-8 space-y-3">
             {buttons.length > 0 ? (
               buttons.map((btn) => (
-                <a
+                <ButtonWithTracking
                   key={btn.key}
-                  href={btn.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-left hover:shadow-md hover:border-blue-200 transition-all group"
-                >
-                  <div className="flex items-center gap-3">
-                    {btn.icon && <span className="text-xl">{btn.icon}</span>}
-                    <span className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {btn.label}
-                    </span>
-                    <span className="ml-auto text-gray-400 group-hover:text-blue-500">→</span>
-                  </div>
-                </a>
+                  label={btn.label}
+                  url={btn.url}
+                  icon={btn.icon}
+                  pageId={pageId || ''}
+                  buttonKey={btn.key}
+                />
               ))
             ) : (
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
