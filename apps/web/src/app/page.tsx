@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { BarChart3, QrCode, Radio } from 'lucide-react';
 import ContactForm from '@/components/contact-form';
 import Footer from '@/components/footer';
 
@@ -107,13 +108,7 @@ export default function Home() {
           <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div className="w-12 h-12 bg-blue-400/20 rounded-xl flex items-center justify-center mb-4">
-                <Image
-                  src="/brand/icon-nfc.png"
-                  alt="Etiquetas NFC"
-                  width={32}
-                  height={32}
-                  className="h-8 w-8"
-                />
+                <Radio className="h-6 w-6 text-blue-300" />
               </div>
               <h3 className="text-white text-lg font-semibold mb-2">Etiquetas NFC</h3>
               <p className="text-blue-100/70 text-sm leading-relaxed">
@@ -122,13 +117,7 @@ export default function Home() {
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div className="w-12 h-12 bg-cyan-400/20 rounded-xl flex items-center justify-center mb-4">
-                <Image
-                  src="/brand/icon-qr.png"
-                  alt="Códigos QR"
-                  width={32}
-                  height={32}
-                  className="h-8 w-8"
-                />
+                <QrCode className="h-6 w-6 text-cyan-300" />
               </div>
               <h3 className="text-white text-lg font-semibold mb-2">Códigos QR</h3>
               <p className="text-blue-100/70 text-sm leading-relaxed">
@@ -137,13 +126,7 @@ export default function Home() {
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <div className="w-12 h-12 bg-purple-400/20 rounded-xl flex items-center justify-center mb-4">
-                <Image
-                  src="/brand/icon-analytics.png"
-                  alt="Analíticas"
-                  width={32}
-                  height={32}
-                  className="h-8 w-8"
-                />
+                <BarChart3 className="h-6 w-6 text-purple-300" />
               </div>
               <h3 className="text-white text-lg font-semibold mb-2">Analíticas</h3>
               <p className="text-blue-100/70 text-sm leading-relaxed">
