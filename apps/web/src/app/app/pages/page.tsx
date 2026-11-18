@@ -386,7 +386,7 @@ export default function PagesPage() {
                           </button>
                         </div>
                         <button
-                          onClick={() => router.push(`/app/pages/${page.id}/buttons`)}
+                          onClick={() => router.push(`/app/pages/${page.id}/buttons?businessId=${page.businessId}`)}
                           className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
                           title="Gestionar botones"
                         >
