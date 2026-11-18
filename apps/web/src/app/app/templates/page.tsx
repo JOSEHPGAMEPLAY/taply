@@ -10,8 +10,10 @@ import {
   Check,
   AlertCircle,
   Loader2,
+  Eye,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import Link from 'next/link';
 
 /**
  * Tipos para los templates.
@@ -228,6 +230,13 @@ export default function TemplatesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/app/templates/${template.id}`}
+                          className="p-1.5 text-gray-400 hover:text-green-600 transition-colors"
+                          title="Preview"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
                         <button
                           onClick={() => openEditModal(template)}
                           className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"

@@ -27,8 +27,11 @@ RUN --mount=type=cache,target=/root/.npm \
 COPY . .
 
 # NEXT_PUBLIC_* variables must be set at build time for Next.js
+# API_INTERNAL_URL is server-side only (not exposed to browser)
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+ARG API_INTERNAL_URL=http://localhost:3001/api/v1
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 
 # Build Next.js with standalone output
 # - TypeScript → JavaScript
@@ -55,6 +58,9 @@ COPY --from=builder --chown=nodejs:nodejs /app/public ./public
 
 # Production environment
 ENV NODE_ENV=production
+# Override at runtime via docker-compose environment vars
+# NEXT_PUBLIC_API_URL: browser-side (localhost)
+# API_INTERNAL_URL: server-side (api service name)
 USER nodejs
 EXPOSE 3000
 

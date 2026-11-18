@@ -15,20 +15,19 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 WORKDIR /app
 
-# Copy package files first for better layer caching
-# If package.json hasn't changed, npm ci is skipped
+# Copy package files and Prisma schema first for better layer caching
+# Prisma schema is needed for the postinstall hook (prisma generate)
 COPY package.json package-lock.json* ./
+COPY prisma/ ./prisma/
 
 # Install all dependencies (including devDependencies for build)
-# npm ci uses package-lock.json for deterministic builds
+# Use --legacy-peer-deps for @nestjs/schedule compatibility with NestJS 12
+# The postinstall hook runs `prisma generate` which needs the schema
 RUN --mount=type=cache,target=/root/.npm \
-    if [ -f package-lock.json ]; then npm ci; else npm install --package-lock-only && npm ci; fi
+    if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
 
 # Copy source code (changes more frequently than package.json)
 COPY . .
-
-# Generate Prisma Client from schema (no database connection needed)
-RUN ./node_modules/.bin/prisma generate --schema=./prisma/schema.prisma
 
 # Build NestJS (TypeScript → JavaScript)
 RUN npm run build
@@ -52,8 +51,14 @@ COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
 # Install production dependencies only (no devDependencies)
+# --ignore-scripts skips postinstall (prisma generate) since Prisma is a devDependency
+# and the client was already generated in the builder stage
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
+    npm ci --omit=dev --legacy-peer-deps --ignore-scripts
+
+# Copy the generated Prisma client (.prisma/client) from builder after npm ci
+# so it's not overwritten by the fresh node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 # Production environment
 ENV NODE_ENV=production

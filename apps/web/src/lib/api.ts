@@ -231,6 +231,16 @@ export const api = {
     return apiRequest<unknown>('POST', `/pages/${id}/unpublish?businessId=${businessId}`);
   },
 
+  /**
+   * PATCH /pages/:id/status?businessId=<uuid> (requiere JWT)
+   * Body: { status: 'DRAFT' | 'PUBLISHED' | 'PAUSED' | 'ARCHIVED' }
+   * NOTE: businessId va como query param
+   * Response: Página con estado actualizado
+   */
+  async updatePageStatus(id: string, businessId: string, status: string) {
+    return apiRequest<unknown>('PATCH', `/pages/${id}/status?businessId=${businessId}`, { status });
+  },
+
   // ==========================================
   // NFC Tags — businessId como QUERY PARAM
   // ==========================================
@@ -401,6 +411,14 @@ export const api = {
    */
   async getTemplates() {
     return apiRequest<Array<{ id: string; name: string; description?: string; config?: Record<string, any>; version: string; createdAt: string }>>('GET', '/templates');
+  },
+
+  /**
+   * GET /templates/:id (requiere JWT)
+   * Response: Template individual
+   */
+  async getTemplate(id: string) {
+    return apiRequest<{ id: string; name: string; description?: string; config?: Record<string, any>; version: string; createdAt: string }>('GET', `/templates/${id}`);
   },
 
   /**

@@ -95,22 +95,35 @@ export class PagesService {
 
   /**
    * Actualiza una página.
+   * Si la página está publicada, los botones se actualizan en la versión PUBLISHED directamente.
    */
   async update(businessId: string, pageId: string, dto: UpdatePageDto) {
     await this.verifyOwnership(businessId, pageId);
 
-    // Si se actualizan botones, actualizar la versión DRAFT más reciente
-    if (dto.buttons !== undefined) {
-      const draftVersion = await this.prisma.pageVersion.findFirst({
-        where: { pageId, status: 'DRAFT' },
-        orderBy: { createdAt: 'desc' },
-      });
+    const page = await this.prisma.page.findUnique({ where: { id: pageId } });
+    if (!page) throw new NotFoundException('Página no encontrada');
 
-      if (draftVersion) {
+    // Si se actualizan botones, actualizar la versión correcta según el estado
+    if (dto.buttons !== undefined) {
+      if (page.status === 'PUBLISHED' && page.publishedVersionId) {
+        // Si está publicada, actualizar directamente la versión publicada
         await this.prisma.pageVersion.update({
-          where: { id: draftVersion.id },
+          where: { id: page.publishedVersionId },
           data: { buttons: dto.buttons as any },
         });
+      } else {
+        // Si no está publicada, actualizar la versión DRAFT más reciente
+        const draftVersion = await this.prisma.pageVersion.findFirst({
+          where: { pageId, status: 'DRAFT' },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (draftVersion) {
+          await this.prisma.pageVersion.update({
+            where: { id: draftVersion.id },
+            data: { buttons: dto.buttons as any },
+          });
+        }
       }
     }
 
@@ -131,6 +144,7 @@ export class PagesService {
 
   /**
    * Publica una versión de la página.
+   * Busca versión DRAFT primero, si no encuentra, busca SUPERSEDED más reciente y la reactiva.
    */
   async publish(businessId: string, pageId: string) {
     await this.verifyOwnership(businessId, pageId);
@@ -139,22 +153,30 @@ export class PagesService {
     if (!page) throw new Error('Página no encontrada');
 
     // Obtener la versión más reciente en DRAFT
-    const version = await this.prisma.pageVersion.findFirst({
+    let version = await this.prisma.pageVersion.findFirst({
       where: { pageId, status: 'DRAFT' },
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!version) throw new BadRequestException('No hay versión en borrador para publicar');
+    // Si no hay DRAFT, buscar la versión SUPERSEDED más reciente y reactivarla
+    if (!version) {
+      version = await this.prisma.pageVersion.findFirst({
+        where: { pageId, status: 'SUPERSEDED' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!version) throw new BadRequestException('No hay versión para publicar');
+    }
 
     // Marcar versión anterior como SUPERSEDED si existe
-    if (page.publishedVersionId) {
+    if (page.publishedVersionId && page.publishedVersionId !== version.id) {
       await this.prisma.pageVersion.update({
         where: { id: page.publishedVersionId },
         data: { status: 'SUPERSEDED' },
       });
     }
 
-    // Publicar la nueva versión
+    // Publicar la versión
     await this.prisma.pageVersion.update({
       where: { id: version.id },
       data: { status: 'PUBLISHED' },
@@ -168,6 +190,7 @@ export class PagesService {
 
   /**
    * Despublica una página, cambiando su estado a DRAFT y marcando la versión publicada como SUPERSEDED.
+   * Crea una nueva versión DRAFT para que publish() pueda encontrarla al reactivar.
    */
   async unpublish(businessId: string, pageId: string) {
     await this.verifyOwnership(businessId, pageId);
@@ -177,17 +200,68 @@ export class PagesService {
     if (page.status !== 'PUBLISHED') throw new BadRequestException('La página no está publicada');
 
     // Marcar la versión publicada actual como SUPERSEDED
+    let publishedConfig = {};
+    let publishedButtons = [];
     if (page.publishedVersionId) {
-      await this.prisma.pageVersion.update({
+      const publishedVersion = await this.prisma.pageVersion.findUnique({
         where: { id: page.publishedVersionId },
-        data: { status: 'SUPERSEDED' },
       });
+      if (publishedVersion) {
+        publishedConfig = publishedVersion.config || {};
+        publishedButtons = publishedVersion.buttons || [];
+        await this.prisma.pageVersion.update({
+          where: { id: page.publishedVersionId },
+          data: { status: 'SUPERSEDED' },
+        });
+      }
     }
+
+    // Crear una nueva versión DRAFT con los datos de la versión publicada
+    await this.prisma.pageVersion.create({
+      data: {
+        pageId,
+        status: 'DRAFT',
+        config: publishedConfig as any,
+        buttons: publishedButtons as any,
+      },
+    });
 
     // Cambiar el estado de la página a DRAFT y quitar la versión publicada
     return this.prisma.page.update({
       where: { id: pageId },
       data: { status: 'DRAFT', publishedVersionId: null },
+    });
+  }
+
+  /**
+   * Cambia el estado de la página (DRAFT, PUBLISHED, PAUSED, ARCHIVED).
+   */
+  async updateStatus(businessId: string, pageId: string, status: string) {
+    await this.verifyOwnership(businessId, pageId);
+
+    const page = await this.prisma.page.findUnique({ where: { id: pageId } });
+    if (!page) throw new NotFoundException('Página no encontrada');
+
+    // Validar el estado
+    const validStatuses = ['DRAFT', 'PUBLISHED', 'PAUSED', 'ARCHIVED'];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException(`Estado inválido. Debe ser uno de: ${validStatuses.join(', ')}`);
+    }
+
+    // Si cambia a PUBLISHED, ejecutar publish
+    if (status === 'PUBLISHED' && page.status !== 'PUBLISHED') {
+      return this.publish(businessId, pageId);
+    }
+
+    // Si cambia de PUBLISHED a otro estado, ejecutar unpublish primero
+    if (page.status === 'PUBLISHED' && status !== 'PUBLISHED') {
+      await this.unpublish(businessId, pageId);
+    }
+
+    // Actualizar el estado de la página
+    return this.prisma.page.update({
+      where: { id: pageId },
+      data: { status: status as any },
     });
   }
 

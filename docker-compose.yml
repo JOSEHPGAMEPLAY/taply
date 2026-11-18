@@ -56,12 +56,17 @@ services:
       context: ./apps/web
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
+        # Build-time defaults (can be overridden at runtime via environment)
+        NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+        API_INTERNAL_URL: http://api:3001/api/v1
     container_name: taply-web
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
+      # Server-side: used by Next.js Server Components inside Docker (resolves to "api" service)
+      API_INTERNAL_URL: http://api:3001/api/v1
+      # Client-side: exposed to browser via NEXT_PUBLIC_ prefix (resolves to host localhost)
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
     ports:
       - "3000:3000"
     depends_on:

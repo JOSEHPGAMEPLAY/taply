@@ -97,4 +97,15 @@ export class PagesController {
   async unpublish(@Param('id') id: string, @Request() request: any, @Query('businessId') businessId: string) {
     return this.pagesService.unpublish(businessId, id);
   }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Cambiar estado de la página', description: 'Cambia el estado de la página entre DRAFT, PUBLISHED, PAUSED, ARCHIVED. Requiere businessId como query param.' })
+  @ApiQuery({ name: 'businessId', required: true, type: String, description: 'ID del negocio' })
+  @ApiBody({ schema: { type: 'object', properties: { status: { type: 'string', enum: ['DRAFT', 'PUBLISHED', 'PAUSED', 'ARCHIVED'] } }, required: ['status'] } })
+  @ApiResponse({ status: 200, description: 'Estado actualizado exitosamente' })
+  @ApiResponse({ status: 404, description: 'Página no encontrada' })
+  @ApiResponse({ status: 400, description: 'Estado inválido' })
+  async updateStatus(@Param('id') id: string, @Body('status') status: string, @Request() request: any, @Query('businessId') businessId: string) {
+    return this.pagesService.updateStatus(businessId, id, status);
+  }
 }

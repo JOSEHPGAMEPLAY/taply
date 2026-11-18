@@ -9,8 +9,8 @@ import ButtonWithTracking from './ButtonWithTracking';
 export default async function PublicPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  // Server Component: dentro de Docker usa la red interna (api:3001)
-  const apiUrl = 'http://api:3001/api/v1';
+  // Server Component: usa API_INTERNAL_URL (Docker) o NEXT_PUBLIC_API_URL (dev local)
+  const apiUrl = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
   let data: any = null;
   let error: string | null = null;
 
