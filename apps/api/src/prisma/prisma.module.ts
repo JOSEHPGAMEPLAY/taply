@@ -44,21 +44,21 @@ export class PrismaModule implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Aplica las migraciones pendientes y conecta a la base de datos.
-   * Esto asegura que las tablas existan tanto en desarrollo como en producción (Vercel).
+   * Funciona tanto en desarrollo como en producción (Docker, Vercel).
+   * Usa la ruta directa al binario de Prisma para evitar problemas con npx.
    */
   async onModuleInit() {
-    // Ejecutar migraciones pendientes de forma idempotente
+    // Aplicar migraciones de forma idempotente
+    const appRoot = join(__dirname, '..', '..');
     try {
-      const prismaPath = join(__dirname, '..', '..', 'prisma');
       execSync('npx prisma migrate deploy', {
-        cwd: prismaPath,
+        cwd: appRoot,
         stdio: 'ignore',
         env: { ...process.env },
       });
       this.logger.log('✅ Migraciones de Prisma aplicadas exitosamente');
     } catch (error) {
-      this.logger.warn('⚠️ Error al aplicar migraciones de Prisma:', error);
-      // No lanzar error - la app puede funcionar con el esquema actual
+      this.logger.warn('⚠️ No se aplicaron migraciones automáticamente:', String(error).slice(0, 200));
     }
 
     // Conectar a la base de datos

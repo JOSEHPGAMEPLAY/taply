@@ -50,11 +50,11 @@ COPY --from=builder --chown=nodejs:nodejs /app/package-lock.json ./package-lock.
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
-# Install production dependencies only (no devDependencies)
-# --ignore-scripts skips postinstall (prisma generate) since Prisma is a devDependency
-# and the client was already generated in the builder stage
+# Install production dependencies + Prisma CLI for runtime migrations
+# Prisma is needed at runtime for `prisma migrate deploy` in onModuleInit
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --legacy-peer-deps --ignore-scripts
+    npm ci --omit=dev --legacy-peer-deps --ignore-scripts && \
+    npm install prisma --no-save --legacy-peer-deps --ignore-scripts
 
 # Copy the generated Prisma client (.prisma/client) from builder after npm ci
 # so it's not overwritten by the fresh node_modules
