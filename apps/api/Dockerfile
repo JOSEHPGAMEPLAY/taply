@@ -50,8 +50,8 @@ COPY --from=builder --chown=nodejs:nodejs /app/package-lock.json ./package-lock.
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
-# Install production dependencies + Prisma CLI for runtime migrations
-# Prisma is needed at runtime for `prisma migrate deploy` in onModuleInit
+# Install production dependencies + Prisma CLI for entrypoint migrations
+# Prisma is needed at runtime for `prisma migrate deploy` in docker-entrypoint.sh
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --legacy-peer-deps --ignore-scripts && \
     npm install prisma --no-save --legacy-peer-deps --ignore-scripts
@@ -60,8 +60,9 @@ RUN --mount=type=cache,target=/root/.npm \
 # so it's not overwritten by the fresh node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
-# Fix permissions on node_modules so the nodejs user can run prisma migrate deploy
-RUN chown -R nodejs:nodejs /app/node_modules
+# Copy and make entrypoint script executable
+COPY --chown=nodejs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Production environment
 ENV NODE_ENV=production
@@ -72,5 +73,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD node -e "const http = require('http'); const req = http.get('http://localhost:3001/api/v1/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }); req.on('error', () => process.exit(1));"
 
-# Start the API server
+# Start the API server via entrypoint (applies migrations first)
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "dist/main"]

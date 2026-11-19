@@ -1,12 +1,6 @@
 import { Global, Module, OnModuleInit, OnModuleDestroy, Inject, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 /**
  * Token inyectable para el cliente Prisma.
@@ -43,25 +37,11 @@ export class PrismaModule implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaModule.name);
 
   /**
-   * Aplica las migraciones pendientes y conecta a la base de datos.
-   * Funciona tanto en desarrollo como en producción (Docker, Vercel).
-   * Usa la ruta directa al binario de Prisma para evitar problemas con npx.
+   * Conecta a la base de datos al iniciar el módulo.
+   * Las migraciones se ejecutan en el build (Vercel) o en docker-compose (Docker),
+   * no en runtime para evitar cold starts lentos en serverless.
    */
   async onModuleInit() {
-    // Aplicar migraciones de forma idempotente
-    const appRoot = join(__dirname, '..', '..');
-    try {
-      execSync('npx prisma migrate deploy', {
-        cwd: appRoot,
-        stdio: 'ignore',
-        env: { ...process.env },
-      });
-      this.logger.log('✅ Migraciones de Prisma aplicadas exitosamente');
-    } catch (error) {
-      this.logger.warn('⚠️ No se aplicaron migraciones automáticamente:', String(error).slice(0, 200));
-    }
-
-    // Conectar a la base de datos
     await this.prisma.$connect();
     this.logger.log('✅ Conexión a la base de datos establecida');
   }

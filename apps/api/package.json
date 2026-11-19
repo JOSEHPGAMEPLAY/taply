@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "npx nest build",
+    "vercel-build": "prisma generate && prisma migrate deploy && npx nest build",
     "dev": "nest start --watch",
     "start": "node dist/main",
     "lint": "eslint \"src/**/*.ts\"",
@@ -36,6 +37,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.16.0",
+    "prisma": "7.10.1",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
@@ -55,7 +57,6 @@
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
     "jest": "^30.0.0",
-    "prisma": "7.10.1",
     "supertest": "^7.3.2",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
