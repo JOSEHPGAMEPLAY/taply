@@ -57,12 +57,16 @@ async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    // Si el token es inválido (401), limpiar tokens y lanzar SessionExpiredError
+    // Si el token es inválido (401) y estamos en una ruta protegida, limpiar tokens y lanzar SessionExpiredError
     // para que el auth-context maneje la redirección con mensaje al usuario
     if (response.status === 401 && typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const isProtectedRoute = pathname.startsWith('/app');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-      throw new SessionExpiredError();
+      if (isProtectedRoute) {
+        throw new SessionExpiredError();
+      }
     }
     const error = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(error.message || error.error || `HTTP ${response.status}`);
