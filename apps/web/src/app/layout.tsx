@@ -6,6 +6,12 @@ import { AuthProvider } from '@/lib/auth-context';
 export const metadata: Metadata = {
   title: 'Taply — Soluciones digitales. Un solo toque.',
   description: 'Crea páginas digitales accesibles mediante etiquetas NFC y códigos QR.',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
