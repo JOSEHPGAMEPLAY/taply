@@ -1,6 +1,7 @@
 import { Global, Module, OnModuleInit, OnModuleDestroy, Inject, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import * as bcrypt from 'bcrypt';
 
 /**
  * Token inyectable para el cliente Prisma.
@@ -37,13 +38,31 @@ export class PrismaModule implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaModule.name);
 
   /**
-   * Conecta a la base de datos al iniciar el módulo.
+   * Conecta a la base de datos y crea el usuario admin por defecto si está configurado.
    * Las migraciones se ejecutan en el build (Vercel) o en docker-compose (Docker),
    * no en runtime para evitar cold starts lentos en serverless.
    */
   async onModuleInit() {
     await this.prisma.$connect();
     this.logger.log('✅ Conexión a la base de datos establecida');
+
+    // Crear usuario admin por defecto si las variables están configuradas
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (adminEmail && adminPassword) {
+      const existing = await this.prisma.user.findUnique({ where: { email: adminEmail } });
+      if (!existing) {
+        const passwordHash = await bcrypt.hash(adminPassword, 10);
+        await this.prisma.user.create({
+          data: {
+            email: adminEmail,
+            passwordHash,
+            name: 'Admin',
+          },
+        });
+        this.logger.log(`✅ Usuario admin creado por defecto: ${adminEmail}`);
+      }
+    }
   }
 
   /**
