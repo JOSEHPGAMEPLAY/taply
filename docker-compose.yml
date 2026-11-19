@@ -27,15 +27,22 @@ services:
     container_name: taply-api
     restart: unless-stopped
     env_file:
-      - ./apps/api/.env.local
+      - ./.env
     environment:
       NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL}
       API_PORT: ${API_PORT:-3001}
-      JWT_SECRET: ${JWT_SECRET:-taply-dev-jwt-secret-change-in-production}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-15m}
-      REFRESH_SECRET: ${REFRESH_SECRET:-taply-dev-refresh-secret-change-in-production}
+      REFRESH_SECRET: ${REFRESH_SECRET}
       REFRESH_EXPIRATION: ${REFRESH_EXPIRATION:-7d}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      EMAIL_SERVICE: ${EMAIL_SERVICE:-gmail}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_CLIENT_ID: ${EMAIL_CLIENT_ID:-}
+      EMAIL_CLIENT_SECRET: ${EMAIL_CLIENT_SECRET:-}
+      EMAIL_REFRESH_TOKEN: ${EMAIL_REFRESH_TOKEN:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
