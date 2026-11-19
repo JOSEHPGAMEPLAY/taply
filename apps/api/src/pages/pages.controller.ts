@@ -108,4 +108,13 @@ export class PagesController {
   async updateStatus(@Param('id') id: string, @Body('status') status: string, @Request() request: any, @Query('businessId') businessId: string) {
     return this.pagesService.updateStatus(businessId, id, status);
   }
+
+  @Get('slug/:slug/check')
+  @ApiOperation({ summary: 'Verificar si un slug ya existe', description: 'Retorna si el slug ya está en uso para el negocio dado. Útil para validación en tiempo real antes de crear.' })
+  @ApiQuery({ name: 'businessId', required: true, type: String, description: 'ID del negocio' })
+  @ApiResponse({ status: 200, description: 'Resultado de la verificación', schema: { type: 'object', properties: { available: { type: 'boolean' } } } })
+  async checkSlug(@Param('slug') slug: string, @Query('businessId') businessId: string) {
+    const available = await this.pagesService.checkSlugAvailable(businessId, slug);
+    return { available };
+  }
 }

@@ -163,11 +163,15 @@ export const api = {
 
   /**
    * PATCH /businesses/:id (requiere JWT)
-   * Body: { name?: string, description?: string }
+   * Body: { name?: string, description?: string, status?: string }
    * Response: Negocio actualizado
    */
-  async updateBusiness(id: string, data: { name?: string; description?: string }) {
-    return apiRequest<unknown>('PATCH', `/businesses/${id}`, data);
+  async updateBusiness(id: string, data: { name?: string; description?: string; status?: string }) {
+    return apiRequest<{ id: string; name: string; slug: string; description?: string; status: string; ownerId: string; createdAt: string; updatedAt: string }>(
+      'PATCH',
+      `/businesses/${id}`,
+      data
+    );
   },
 
   /**
@@ -186,10 +190,14 @@ export const api = {
    * POST /pages?businessId=<uuid> (requiere JWT)
    * Body: { slug: string, templateId?: string, description?: string }
    * NOTE: businessId va como query param, NO en el body
-   * Response: { id, slug, status, businessId, ... }
+   * Response: { id, slug, status, businessId, templateId, publishedVersionId, createdAt, updatedAt }
    */
   async createPage(businessId: string, data: { slug: string; templateId?: string; description?: string }) {
-    return apiRequest<unknown>('POST', `/pages?businessId=${businessId}`, data);
+    return apiRequest<{ id: string; slug: string; status: string; businessId: string; templateId?: string; publishedVersionId: string | null; createdAt: string; updatedAt: string }>(
+      'POST',
+      `/pages?businessId=${businessId}`,
+      data
+    );
   },
 
   /**
@@ -198,7 +206,10 @@ export const api = {
    */
   async getPages(businessId?: string) {
     const query = businessId ? `?businessId=${businessId}` : '';
-    return apiRequest<unknown[]>('GET', `/pages${query}`);
+    return apiRequest<Array<{ id: string; slug: string; status: string; businessId: string; templateId?: string; publishedVersionId: string | null; createdAt: string; updatedAt: string; versions?: Array<{ id: string; status: string; config: Record<string, unknown>; buttons: Array<{ key: string; label: string; url: string; icon?: string }> }> }>>(
+      'GET',
+      `/pages${query}`
+    );
   },
 
   /**
@@ -206,16 +217,31 @@ export const api = {
    * Response: Página con versión publicada
    */
   async getPage(id: string, businessId: string) {
-    return apiRequest<unknown>('GET', `/pages/${id}?businessId=${businessId}`);
+    return apiRequest<{ id: string; slug: string; status: string; businessId: string; templateId?: string; publishedVersionId: string | null; createdAt: string; updatedAt: string; versions: Array<{ id: string; status: string; config: Record<string, unknown>; buttons: Array<{ key: string; label: string; url: string; icon?: string }> }> }>(
+      'GET',
+      `/pages/${id}?businessId=${businessId}`
+    );
   },
 
   /**
    * PATCH /pages/:id?businessId=<uuid> (requiere JWT)
-   * Body: { slug?: string, templateId?: string }
+   * Body: { slug?: string, templateId?: string, buttons?: Array<...> }
    * Response: Página actualizada
    */
   async updatePage(id: string, businessId: string, data: { slug?: string; templateId?: string; buttons?: Array<{ key: string; label: string; url: string; icon?: string }> }) {
-    return apiRequest<unknown>('PATCH', `/pages/${id}?businessId=${businessId}`, data);
+    return apiRequest<{ id: string; slug: string; status: string; businessId: string; templateId?: string; publishedVersionId: string | null; createdAt: string; updatedAt: string }>(
+      'PATCH',
+      `/pages/${id}?businessId=${businessId}`,
+      data
+    );
+  },
+
+  /**
+   * GET /pages/slug/:slug/check?businessId=<uuid> (requiere JWT)
+   * Response: { available: boolean }
+   */
+  async checkSlugAvailable(businessId: string, slug: string) {
+    return apiRequest<{ available: boolean }>('GET', `/pages/slug/${slug}/check?businessId=${businessId}`);
   },
 
   /**
@@ -232,7 +258,10 @@ export const api = {
    * Response: Página publicada
    */
   async publishPage(id: string, businessId: string) {
-    return apiRequest<unknown>('POST', `/pages/${id}/publish?businessId=${businessId}`);
+    return apiRequest<{ id: string; slug: string; status: string; businessId: string; publishedVersionId: string; createdAt: string; updatedAt: string }>(
+      'POST',
+      `/pages/${id}/publish?businessId=${businessId}`
+    );
   },
 
   /**
@@ -241,7 +270,10 @@ export const api = {
    * Response: Página despublicada (status DRAFT, publishedVersionId null)
    */
   async unpublishPage(id: string, businessId: string) {
-    return apiRequest<unknown>('POST', `/pages/${id}/unpublish?businessId=${businessId}`);
+    return apiRequest<{ id: string; slug: string; status: string; businessId: string; publishedVersionId: string | null; createdAt: string; updatedAt: string }>(
+      'POST',
+      `/pages/${id}/unpublish?businessId=${businessId}`
+    );
   },
 
   /**
@@ -251,7 +283,11 @@ export const api = {
    * Response: Página con estado actualizado
    */
   async updatePageStatus(id: string, businessId: string, status: string) {
-    return apiRequest<unknown>('PATCH', `/pages/${id}/status?businessId=${businessId}`, { status });
+    return apiRequest<{ id: string; slug: string; status: string; businessId: string; publishedVersionId: string | null; createdAt: string; updatedAt: string }>(
+      'PATCH',
+      `/pages/${id}/status?businessId=${businessId}`,
+      { status }
+    );
   },
 
   // ==========================================
@@ -262,10 +298,14 @@ export const api = {
    * POST /nfc-tags?businessId=<uuid> (requiere JWT)
    * Body: { token?: string } — token opcional, se genera si no se proporciona
    * NOTE: businessId va como query param, NO en el body
-   * Response: { id, token, status, ... }
+   * Response: { id, token, status, businessId, assignedPageId, createdAt, updatedAt }
    */
   async createNfcTag(businessId: string, data?: { token?: string }) {
-    return apiRequest<unknown>('POST', `/nfc-tags?businessId=${businessId}`, data);
+    return apiRequest<{ id: string; token: string; status: string; businessId: string; assignedPageId: string | null; createdAt: string; updatedAt: string }>(
+      'POST',
+      `/nfc-tags?businessId=${businessId}`,
+      data
+    );
   },
 
   /**
@@ -274,7 +314,10 @@ export const api = {
    */
   async getNfcTags(businessId?: string) {
     const query = businessId ? `?businessId=${businessId}` : '';
-    return apiRequest<unknown[]>('GET', `/nfc-tags${query}`);
+    return apiRequest<Array<{ id: string; token: string; status: string; businessId: string; assignedPageId: string | null; createdAt: string; updatedAt: string; assignment?: { pageId: string; pageSlug: string } }>>(
+      'GET',
+      `/nfc-tags${query}`
+    );
   },
 
   /**
@@ -282,7 +325,10 @@ export const api = {
    * Response: Etiqueta con asignación activa
    */
   async getNfcTag(id: string, businessId: string) {
-    return apiRequest<unknown>('GET', `/nfc-tags/${id}?businessId=${businessId}`);
+    return apiRequest<{ id: string; token: string; status: string; businessId: string; assignedPageId: string | null; createdAt: string; updatedAt: string; assignment?: { pageId: string; pageSlug: string } }>(
+      'GET',
+      `/nfc-tags/${id}?businessId=${businessId}`
+    );
   },
 
   /**
@@ -292,7 +338,11 @@ export const api = {
    * Response: Asignación creada
    */
   async assignTag(tagId: string, businessId: string, pageId: string) {
-    return apiRequest<unknown>('POST', `/nfc-tags/${tagId}/assign?businessId=${businessId}`, { pageId });
+    return apiRequest<{ id: string; tagId: string; pageId: string; createdAt: string }>(
+      'POST',
+      `/nfc-tags/${tagId}/assign?businessId=${businessId}`,
+      { pageId }
+    );
   },
 
   /**
@@ -300,7 +350,7 @@ export const api = {
    * Response: Escaneo registrado
    */
   async scanTag(tagId: string) {
-    return apiRequest<unknown>('POST', `/nfc-tags/${tagId}/scan`);
+    return apiRequest<{ id: string; tagId: string; scannedAt: string }>('POST', `/nfc-tags/${tagId}/scan`);
   },
 
   // ==========================================
@@ -316,7 +366,13 @@ export const api = {
     const params = new URLSearchParams({ pageId });
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
-    return apiRequest<unknown>('GET', `/analytics/stats?${params}`);
+    return apiRequest<{
+      totalViews: number;
+      totalClicks: number;
+      totalScans: number;
+      viewsByDay: Array<{ date: string; count: number }>;
+      clicksByButton: Array<{ buttonKey: string; count: number }>;
+    }>('GET', `/analytics/stats?${params}`);
   },
 
   // ==========================================
@@ -368,7 +424,11 @@ export const api = {
    * Actualiza el estado de un negocio.
    */
   async updateBusinessStatus(id: string, status: string) {
-    return apiRequest<unknown>('PATCH', `/businesses/${id}`, { status });
+    return apiRequest<{ id: string; name: string; slug: string; description?: string; status: string; ownerId: string; createdAt: string; updatedAt: string }>(
+      'PATCH',
+      `/businesses/${id}`,
+      { status }
+    );
   },
 
   /**
@@ -377,7 +437,7 @@ export const api = {
    * Response: { id, type, pageId, ... }
    */
   async recordEvent(data: { type: 'PAGE_VIEW' | 'BUTTON_CLICK' | 'TAG_SCAN'; pageId: string; tagId?: string; buttonKey?: string; metadata?: Record<string, unknown> }) {
-    return apiRequest<unknown>('POST', '/public/analytics/events', data);
+    return apiRequest<{ id: string; type: string; pageId: string; tagId?: string; buttonKey?: string; createdAt: string }>('POST', '/public/analytics/events', data);
   },
 
   // ==========================================
@@ -397,14 +457,18 @@ export const api = {
    * Body: { role: 'ADMIN' | 'USER' }
    */
   async updateUserRole(id: string, role: string) {
-    return apiRequest<unknown>('PATCH', `/admin/users/${id}/role`, { role });
+    return apiRequest<{ id: string; email: string; name: string; role: string; createdAt: string }>(
+      'PATCH',
+      `/admin/users/${id}/role`,
+      { role }
+    );
   },
 
   /**
    * DELETE /admin/users/:id (requiere JWT + rol ADMIN)
    */
   async deleteUser(id: string) {
-    return apiRequest<unknown>('DELETE', `/admin/users/${id}`);
+    return apiRequest<{ message: string }>('DELETE', `/admin/users/${id}`);
   },
 
   /**
