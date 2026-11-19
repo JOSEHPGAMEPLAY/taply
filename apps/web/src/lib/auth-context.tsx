@@ -46,11 +46,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Verifica si hay un token válido al cargar la app.
+   * Solo se ejecuta en rutas protegidas (/app/*, /login, /register).
+   * Las páginas públicas (/, /p/[slug], /t/[token]) no validan token.
    */
   useEffect(() => {
-    // Si ya estamos en la página de login, no intentamos validar el token
-    if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+
+    // Rutas protegidas que requieren autenticación
+    const isProtectedRoute = pathname.startsWith('/app') || pathname === '/login' || pathname === '/register';
+
+    // Si no es una ruta protegida, no validamos token
+    if (!isProtectedRoute) {
       setLoading(false);
+      return;
+    }
+
+    // Si estamos en login o register y ya hay un usuario válido, redirigir al dashboard
+    if ((pathname === '/login' || pathname === '/register') && localStorage.getItem('accessToken')) {
+      api.getMe()
+        .then((u) => {
+          setUser(u);
+          router.push('/app');
+        })
+        .catch(() => {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
       return;
     }
 
@@ -64,10 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('refreshToken');
         setUser(null);
 
-        // Si el error ya fue manejado por api.ts (redirección), no hacemos nada
-        // De lo contrario, mostrar el mensaje de sesión expirada
+        // Si el error ya fue manejado por api.ts, solo limpiar
         if (err instanceof SessionExpiredError) {
-          // Ya se manejó en api.ts, solo limpiar
           return;
         }
         handleSessionExpired();
@@ -75,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => {
         setLoading(false);
       });
-  }, [handleSessionExpired]);
+  }, [handleSessionExpired, router]);
 
   /**
    * Inicia sesión y almacena el token.

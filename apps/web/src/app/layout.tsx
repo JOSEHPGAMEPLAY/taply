@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
-import { AuthProvider } from '@/lib/auth-context';
 
 export const metadata: Metadata = {
   title: 'Taply — Soluciones digitales. Un solo toque.',
@@ -22,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        {children}
         <Analytics />
       </body>
     </html>
