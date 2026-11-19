@@ -14,6 +14,8 @@
  * IMPORTANTE: Pages y NFC Tags requieren businessId como QUERY PARAM, no en el body.
  */
 
+import { SessionExpiredError } from '@/lib/session-error';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 /**
@@ -55,11 +57,12 @@ async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    // Si el token es inválido (401), limpiar tokens y redirigir al login
+    // Si el token es inválido (401), limpiar tokens y lanzar SessionExpiredError
+    // para que el auth-context maneje la redirección con mensaje al usuario
     if (response.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-      window.location.href = '/login';
+      throw new SessionExpiredError();
     }
     const error = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(error.message || error.error || `HTTP ${response.status}`);
