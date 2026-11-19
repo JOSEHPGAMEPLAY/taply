@@ -4,6 +4,8 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
+import { useEffect } from 'react';
 import {
   Home,
   Building2,
@@ -23,6 +25,14 @@ import { useState } from 'react';
  * Diseño profesional con iconos y navegación clara.
  */
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // Actualizar el title de la pestaña del navegador para el dashboard
+  useEffect(() => {
+    const originalTitle = document.title;
+    document.title = 'Taply Dashboard — Soluciones digitales. Un solo toque.';
+    return () => {
+      document.title = originalTitle;
+    };
+  }, []);
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -57,9 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Logo */}
           <div className="flex items-center justify-between px-6 py-5 border-b">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center">
-                <span className="text-white text-lg font-bold">T</span>
-              </div>
+              <Image src="/brand/isotipo.svg" alt="Taply" width={36} height={36} className="w-9 h-9" />
               <span className="text-xl font-bold text-gray-900">Taply</span>
             </Link>
             <button
