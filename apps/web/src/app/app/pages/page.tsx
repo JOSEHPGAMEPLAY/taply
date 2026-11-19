@@ -60,6 +60,8 @@ export default function PagesPage() {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ businessId: '', slug: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [slugChecking, setSlugChecking] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [filterBusinessId, setFilterBusinessId] = useState<string>('');
   const [editingPage, setEditingPage] = useState<Page | null>(null);
@@ -115,7 +117,28 @@ export default function PagesPage() {
    */
   const openCreateModal = () => {
     setFormData({ businessId: filterBusinessId, slug: '' });
+    setSlugAvailable(null);
     setShowModal(true);
+  };
+
+  /**
+   * Verifica si un slug está disponible en la API.
+   */
+  const checkSlug = async (slug: string, businessId: string) => {
+    if (!slug.trim() || !businessId) {
+      setSlugAvailable(null);
+      return;
+    }
+    const normalizedSlug = slug.trim().toLowerCase().replace(/\s+/g, '-');
+    try {
+      setSlugChecking(true);
+      const data = await api.checkSlugAvailable(businessId, normalizedSlug);
+      setSlugAvailable(data.available);
+    } catch {
+      setSlugAvailable(null);
+    } finally {
+      setSlugChecking(false);
+    }
   };
 
   /**
@@ -443,20 +466,54 @@ export default function PagesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Slug <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
-                  placeholder="mi-restaurante"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  required
-                  autoFocus
-                  pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-                  title="Solo letras minúsculas, números y guiones"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => {
+                      const value = e.target.value.toLowerCase().replace(/\s+/g, '-');
+                      setFormData({ ...formData, slug: value });
+                      setSlugAvailable(null);
+                    }}
+                    onBlur={() => checkSlug(formData.slug, formData.businessId)}
+                    placeholder="mi-restaurante"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm pr-10"
+                    required
+                    autoFocus
+                    pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                    title="Solo letras minúsculas, números y guiones"
+                  />
+                  {slugChecking && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                    </div>
+                  )}
+                  {!slugChecking && slugAvailable === true && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Check className="w-4 h-4 text-green-500" />
+                    </div>
+                  )}
+                  {!slugChecking && slugAvailable === false && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <X className="w-4 h-4 text-red-500" />
+                    </div>
+                  )}
+                </div>
                 <p className="mt-1 text-xs text-gray-500">
                   La URL pública será: <code className="bg-gray-100 px-1 rounded">/p/{formData.slug || 'tu-slug'}</code>
                 </p>
+                {slugAvailable === false && (
+                  <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Este slug ya existe para este negocio. Elige otro.
+                  </p>
+                )}
+                {slugAvailable === true && (
+                  <p className="mt-1 text-xs text-green-600 flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    ¡Slug disponible!
+                  </p>
+                )}
               </div>
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button

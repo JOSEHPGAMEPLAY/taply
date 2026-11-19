@@ -265,6 +265,17 @@ export class PagesService {
     });
   }
 
+  /**
+   * Verifica si un slug está disponible para un negocio.
+   * Retorna true si el slug no existe, false si ya está en uso.
+   */
+  async checkSlugAvailable(businessId: string, slug: string): Promise<boolean> {
+    const existing = await this.prisma.page.findUnique({
+      where: { businessId_slug: { businessId, slug } },
+    });
+    return !existing;
+  }
+
   private async verifyOwnership(businessId: string, pageId: string) {
     const page = await this.prisma.page.findUnique({ where: { id: pageId } });
     if (!page) throw new NotFoundException('Página no encontrada');
