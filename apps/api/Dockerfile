@@ -60,6 +60,10 @@ RUN --mount=type=cache,target=/root/.npm \
 # so it's not overwritten by the fresh node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
+# Fix permissions: Prisma engines need to download binaries at runtime as nodejs user
+RUN chown -R nodejs:nodejs /app/node_modules/@prisma && \
+    chown -R nodejs:nodejs /app/node_modules/prisma
+
 # Copy and make entrypoint script executable
 COPY --chown=nodejs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
