@@ -34,7 +34,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(u);
       })
       .catch(() => {
+        // Token inválido o expirado: limpiar ambos tokens y redirigir al login
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
       })
       .finally(() => {
         setLoading(false);

@@ -55,6 +55,12 @@ async function apiRequest<T>(
   });
 
   if (!response.ok) {
+    // Si el token es inválido (401), limpiar tokens y redirigir al login
+    if (response.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      window.location.href = '/login';
+    }
     const error = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(error.message || error.error || `HTTP ${response.status}`);
   }
