@@ -1,11 +1,12 @@
 "use client";
 
+import { AuthProvider } from '@/lib/auth-context';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Home,
   Building2,
@@ -18,13 +19,29 @@ import {
   X,
   Shield,
 } from 'lucide-react';
-import { useState } from 'react';
-
 /**
  * Layout del dashboard con sidebar y header.
  * Diseño profesional con iconos y navegación clara.
+ * Envuelve el contenido con AuthProvider para autenticación.
  */
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <DashboardContent>{children}</DashboardContent>
+    </AuthProvider>
+  );
+}
+
+/**
+ * Contenido del dashboard que requiere autenticación.
+ * Redirige al login si no hay usuario autenticado.
+ */
+function DashboardContent({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { user, logout, loading } = useAuth();
+  const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   // Actualizar el title de la pestaña del navegador para el dashboard
   useEffect(() => {
     const originalTitle = document.title;
@@ -33,9 +50,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       document.title = originalTitle;
     };
   }, []);
-  const { user, logout } = useAuth();
-  const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Redirigir al login si no hay usuario y ya terminó de cargar
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
+
+  // Mientras se verifica el token, mostrar loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto" />
+          <p className="mt-4 text-sm text-gray-500">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no hay usuario, no mostrar nada (ya se redirigió)
+  if (!user) {
+    return null;
+  }
 
   const navItems = [
     { href: '/app', label: 'Dashboard', icon: Home },
