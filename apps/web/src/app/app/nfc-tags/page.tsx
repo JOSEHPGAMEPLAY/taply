@@ -22,8 +22,10 @@ interface NfcTag {
   token: string;
   status: string;
   businessId: string;
-  programmedUrl: string | null;
+  assignedPageId: string | null;
   createdAt: string;
+  updatedAt?: string;
+  assignment?: { pageId: string; pageSlug: string };
 }
 
 /**
