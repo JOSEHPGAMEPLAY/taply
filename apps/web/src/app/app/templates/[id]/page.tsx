@@ -22,24 +22,27 @@ interface Template {
  * Muestra cómo se vería una página pública con esa template aplicada,
  * replicando el diseño de /p/[slug] pero con datos de la template.
  */
-export default function TemplatePreviewPage({ params }: { params: { id: string } }) {
+export default function TemplatePreviewPage({ params }: { params: Promise<{ id: string }> }) {
   const [template, setTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getTemplate(params.id)
-      .then((data) => {
+    // Unwrap params promise (Next.js 15+)
+    (async () => {
+      try {
+        setLoading(true);
+        const { id } = await params;
+        const data = await api.getTemplate(id);
         setTemplate(data as Template);
         setError(null);
-      })
-      .catch((err) => {
+      } catch (err) {
         setError(err instanceof Error ? err.message : 'No se pudo cargar la template');
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
-  }, [params.id]);
+      }
+    })();
+  }, [params]);
 
   // Extraer configuración de la template
   const config = template?.config || {};
