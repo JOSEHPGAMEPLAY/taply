@@ -58,6 +58,7 @@ export class PrismaModule implements OnModuleInit, OnModuleDestroy {
             email: adminEmail,
             passwordHash,
             name: 'Admin',
+            role: 'ADMIN',
           },
         });
         this.logger.log(`✅ Usuario admin creado por defecto: ${adminEmail}`);
