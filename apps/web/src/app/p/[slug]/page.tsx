@@ -52,7 +52,9 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
   const business = data?.business;
   const pageId = data?.page?.id;
   const rawButtons = data?.publishedVersion?.buttons;
-  const buttons: Array<{ key: string; label: string; url: string; icon?: string }> = Array.isArray(rawButtons) ? rawButtons : [];
+  const allButtons: Array<{ key: string; label: string; url: string; icon?: string; hidden?: boolean }> = Array.isArray(rawButtons) ? rawButtons : [];
+  // Filtrar botones ocultos: solo mostrar los visibles en la página pública
+  const buttons = allButtons.filter(btn => !btn.hidden);
   const pageConfig = data?.publishedVersion?.config || {};
   const initial = business?.name?.charAt(0)?.toUpperCase() || slug.charAt(0).toUpperCase();
 

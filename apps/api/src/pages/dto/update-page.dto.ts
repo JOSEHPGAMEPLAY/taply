@@ -1,4 +1,4 @@
-import { IsString, MinLength, MaxLength, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { IsString, MinLength, MaxLength, IsOptional, IsArray, ValidateNested, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -20,6 +20,10 @@ export class ButtonDto {
   @IsOptional()
   @IsString()
   icon?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  hidden?: boolean;
 }
 
 /**
