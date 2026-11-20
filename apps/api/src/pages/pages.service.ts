@@ -16,6 +16,7 @@ export class PagesService {
   /**
    * Crea una nueva página para un negocio.
    * Si el slug ya existe para ese negocio, retorna 409 Conflict.
+   * Si se asigna un template, copia su config a la PageVersion inicial.
    */
   async create(businessId: string, dto: CreatePageDto) {
     const business = await this.prisma.business.findUnique({ where: { id: businessId } });
@@ -29,6 +30,15 @@ export class PagesService {
       throw new ConflictException(`Ya existe una página con el slug "${dto.slug}" para este negocio. Elige otro slug.`);
     }
 
+    // Si se asigna un template, obtener su config para copiarla a la versión
+    let versionConfig: any = {};
+    if (dto.templateId) {
+      const template = await this.prisma.template.findUnique({ where: { id: dto.templateId } });
+      if (template && template.config) {
+        versionConfig = template.config as any;
+      }
+    }
+
     // Crear página y versión inicial en una transacción
     const page = await this.prisma.$transaction(async (tx: any) => {
       const page = await tx.page.create({
@@ -40,12 +50,12 @@ export class PagesService {
         },
       });
 
-      // Crear versión inicial
+      // Crear versión inicial con la config del template (si aplica)
       await tx.pageVersion.create({
         data: {
           pageId: page.id,
           status: 'DRAFT',
-          config: {},
+          config: versionConfig,
           buttons: [],
         },
       });
@@ -87,7 +97,10 @@ export class PagesService {
    * Obtiene una página por ID verificando ownership.
    */
   async findOne(businessId: string, pageId: string) {
-    const page = await this.prisma.page.findUnique({ where: { id: pageId } });
+    const page = await this.prisma.page.findUnique({
+      where: { id: pageId },
+      include: { versions: true },
+    });
     if (!page) throw new NotFoundException('Página no encontrada');
     if (page.businessId !== businessId) throw new ForbiddenException('No tienes permiso');
     return page;
@@ -145,6 +158,8 @@ export class PagesService {
   /**
    * Publica una versión de la página.
    * Busca versión DRAFT primero, si no encuentra, busca SUPERSEDED más reciente y la reactiva.
+   * Antes de publicar, si la página tiene un template asignado, actualiza la config de la versión
+   * con la config actual del template para que los cambios del template se reflejen.
    */
   async publish(businessId: string, pageId: string) {
     await this.verifyOwnership(businessId, pageId);
@@ -166,6 +181,18 @@ export class PagesService {
       });
 
       if (!version) throw new BadRequestException('No hay versión para publicar');
+    }
+
+    // Si la página tiene un template asignado, actualizar la config de la versión
+    // con la config actual del template antes de publicar
+    if (page.templateId) {
+      const template = await this.prisma.template.findUnique({ where: { id: page.templateId } });
+      if (template && template.config) {
+        await this.prisma.pageVersion.update({
+          where: { id: version.id },
+          data: { config: template.config as any },
+        });
+      }
     }
 
     // Marcar versión anterior como SUPERSEDED si existe
