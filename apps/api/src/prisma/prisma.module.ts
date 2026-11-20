@@ -22,6 +22,10 @@ export const PRISMA_CLIENT = 'PrismaClient';
     {
       provide: PRISMA_CLIENT,
       useFactory: () => {
+        // PrismaPg adapter no soporta SSL; usar solo con DB locales
+        if (process.env.DATABASE_URL?.includes('sslmode=require')) {
+          return new PrismaClient();
+        }
         const adapter = new PrismaPg(process.env.DATABASE_URL!);
         return new PrismaClient({ adapter });
       },
@@ -43,25 +47,28 @@ export class PrismaModule implements OnModuleInit, OnModuleDestroy {
    * no en runtime para evitar cold starts lentos en serverless.
    */
   async onModuleInit() {
-    await this.prisma.$connect();
-    this.logger.log('✅ Conexión a la base de datos establecida');
+    this.logger.log('✅ PrismaModule inicializado');
 
     // Crear usuario admin por defecto si las variables están configuradas
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASSWORD;
     if (adminEmail && adminPassword) {
-      const existing = await this.prisma.user.findUnique({ where: { email: adminEmail } });
-      if (!existing) {
-        const passwordHash = await bcrypt.hash(adminPassword, 10);
-        await this.prisma.user.create({
-          data: {
-            email: adminEmail,
-            passwordHash,
-            name: 'Admin',
-            role: 'ADMIN',
-          },
-        });
-        this.logger.log(`✅ Usuario admin creado por defecto: ${adminEmail}`);
+      try {
+        const existing = await this.prisma.user.findUnique({ where: { email: adminEmail } });
+        if (!existing) {
+          const passwordHash = await bcrypt.hash(adminPassword, 10);
+          await this.prisma.user.create({
+            data: {
+              email: adminEmail,
+              passwordHash,
+              name: 'Admin',
+              role: 'ADMIN',
+            },
+          });
+          this.logger.log(`✅ Usuario admin creado por defecto: ${adminEmail}`);
+        }
+      } catch (error) {
+        this.logger.warn(`⚠️ No se pudo crear usuario admin: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   }

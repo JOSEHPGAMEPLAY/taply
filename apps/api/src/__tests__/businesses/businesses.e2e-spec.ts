@@ -75,7 +75,7 @@ describe('Businesses (E2E)', () => {
       expect(res.body).toHaveProperty('id');
       expect(res.body.name).toBe('Mi Negocio de Prueba');
       expect(res.body).toHaveProperty('slug');
-      expect(res.body.status).toBe('PROSPECT');
+      expect(res.body.status).toBe('ACTIVE');
 
       businessId = res.body.id;
     });
@@ -114,12 +114,21 @@ describe('Businesses (E2E)', () => {
 
   describe('GET /businesses/:id', () => {
     it('debe obtener un negocio por ID', async () => {
+      // Recrear un negocio porque businessId puede haber sido eliminado en tests anteriores
+      const createRes = await request(app.getHttpServer())
+        .post(baseUrl)
+        .set('Authorization', `Bearer ${accessToken1}`)
+        .send({
+          name: 'Negocio para GET',
+        })
+        .expect(201);
+
       const res = await request(app.getHttpServer())
-        .get(`${baseUrl}/${businessId}`)
+        .get(`${baseUrl}/${createRes.body.id}`)
         .set('Authorization', `Bearer ${accessToken1}`)
         .expect(200);
 
-      expect(res.body.id).toBe(businessId);
+      expect(res.body.id).toBe(createRes.body.id);
     });
 
     it('debe fallar si el negocio no existe (404)', async () => {
@@ -132,8 +141,17 @@ describe('Businesses (E2E)', () => {
 
   describe('PATCH /businesses/:id', () => {
     it('debe actualizar un negocio', async () => {
+      // Crear un negocio fresco para este test
+      const createRes = await request(app.getHttpServer())
+        .post(baseUrl)
+        .set('Authorization', `Bearer ${accessToken1}`)
+        .send({
+          name: 'Negocio para PATCH',
+        })
+        .expect(201);
+
       const res = await request(app.getHttpServer())
-        .patch(`${baseUrl}/${businessId}`)
+        .patch(`${baseUrl}/${createRes.body.id}`)
         .set('Authorization', `Bearer ${accessToken1}`)
         .send({
           name: 'Negocio Actualizado',

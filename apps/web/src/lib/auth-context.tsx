@@ -27,8 +27,23 @@ const AuthContext = createContext<AuthContextType | null>(null);
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; email: string; name: string; role: string } | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // Hydratar usuario desde localStorage inmediatamente para evitar parpadeo
+  const savedUser = typeof window !== 'undefined' 
+    ? (() => {
+        try {
+          const token = localStorage.getItem('accessToken');
+          const storedUser = localStorage.getItem('taply_user');
+          if (token && storedUser) {
+            return JSON.parse(storedUser);
+          }
+        } catch {}
+        return null;
+      })()
+    : null;
+  
+  const [user, setUser] = useState<{ id: string; email: string; name: string; role: string } | null>(savedUser);
+  const [loading, setLoading] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   let autoRedirectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -64,8 +79,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Verifica si hay un token válido al cargar la app.
-   * Solo se ejecuta en rutas protegidas (/app/*, /login, /register).
+   * Solo se ejecuta una vez al montar el componente (no en cada navegación).
    * Las páginas públicas (/, /p/[slug], /t/[token]) no validan token.
+   * No usa loading state para evitar parpadeos al navegar.
    */
   useEffect(() => {
     const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -75,7 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Si no es una ruta protegida, no validamos token
     if (!isProtectedRoute) {
-      setLoading(false);
       return;
     }
 
@@ -84,14 +99,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       api.getMe()
         .then((u) => {
           setUser(u);
+          localStorage.setItem('taply_user', JSON.stringify(u));
           router.push('/app');
         })
         .catch(() => {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
-        })
-        .finally(() => {
-          setLoading(false);
+          localStorage.removeItem('taply_user');
+          setUser(null);
         });
       return;
     }
@@ -99,11 +114,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     api.getMe()
       .then((u) => {
         setUser(u);
+        localStorage.setItem('taply_user', JSON.stringify(u));
       })
       .catch((err) => {
         // Token inválido o expirado: limpiar tokens y notificar al usuario
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('taply_user');
         setUser(null);
 
         // Si el error ya fue manejado por api.ts, solo limpiar
@@ -111,11 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         handleSessionExpired();
-      })
-      .finally(() => {
-        setLoading(false);
       });
-  }, [handleSessionExpired, router, api]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * Inicia sesión y almacena el token.
@@ -124,9 +139,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await api.login({ email, password });
     localStorage.setItem('accessToken', result.accessToken);
     localStorage.setItem('refreshToken', result.refreshToken);
-    setUser(result.user as { id: string; email: string; name: string; role: string });
+    const u = result.user as { id: string; email: string; name: string; role: string };
+    localStorage.setItem('taply_user', JSON.stringify(u));
+    setUser(u);
     setSessionExpired(false);
-  }, []);
+    router.push('/app');
+  }, [router]);
 
   /**
    * Registra un nuevo usuario.
@@ -135,8 +153,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await api.register({ email, password, name });
     localStorage.setItem('accessToken', result.accessToken);
     localStorage.setItem('refreshToken', result.refreshToken);
-    setUser(result.user as { id: string; email: string; name: string; role: string });
-  }, []);
+    const u = result.user as { id: string; email: string; name: string; role: string };
+    localStorage.setItem('taply_user', JSON.stringify(u));
+    setUser(u);
+    router.push('/app');
+  }, [router]);
 
   /**
    * Cierra sesión y elimina los tokens.
@@ -144,6 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('taply_user');
     setUser(null);
     router.push('/login');
   }, [router]);

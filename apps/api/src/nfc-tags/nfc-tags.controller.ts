@@ -41,7 +41,7 @@ export class NfcTagsController {
   @ApiQuery({ name: 'businessId', required: false, type: String, description: 'ID del negocio (opcional)' })
   @ApiResponse({ status: 200, description: 'Lista de etiquetas' })
   async findAll(@Request() request: any, @Query('businessId') businessId: string) {
-    return this.nfcTagsService.findAll(businessId || '', request.user?.sub);
+    return this.nfcTagsService.findAll(businessId || '', request.user?.userId);
   }
 
   @Get(':id')
