@@ -25,7 +25,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(email, password, name);
-      router.push('/app');
+      // La redirección a /app la maneja auth-context después de setUser
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrarse');
     } finally {

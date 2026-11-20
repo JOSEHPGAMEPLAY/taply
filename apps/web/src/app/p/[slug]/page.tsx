@@ -2,9 +2,10 @@ import Link from 'next/link';
 import ButtonWithTracking from './ButtonWithTracking';
 
 /**
- * Página pública de un negocio.
+ * Página pública de un negocio — Rediseñada con UX/UI moderna.
  * Carga datos reales de la API pública y muestra perfil, botones y registra PAGE_VIEW.
  * Cada click en un botón registra un evento BUTTON_CLICK antes de redirigir.
+ * Soporta personalización mediante templates (colores, fondo, logo, forma de botones).
  */
 export default async function PublicPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -30,16 +31,16 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
         <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-white/10 rounded-2xl mx-auto flex items-center justify-center mb-6">
+          <div className="w-20 h-20 bg-white/5 rounded-2xl mx-auto flex items-center justify-center mb-6 border border-white/10">
             <span className="text-4xl">⚠️</span>
           </div>
           <h2 className="text-2xl font-bold text-white">Página no disponible</h2>
-          <p className="mt-3 text-blue-100/80">{error}</p>
+          <p className="mt-3 text-gray-400">{error}</p>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-white text-blue-700 rounded-xl hover:bg-blue-50 transition-colors text-sm font-semibold"
+            className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors text-sm font-semibold border border-white/10"
           >
             Volver al inicio
           </Link>
@@ -51,70 +52,97 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
   const business = data?.business;
   const pageId = data?.page?.id;
   const rawButtons = data?.publishedVersion?.buttons;
-  const buttons: Array<{ key: string; label: string; url: string; icon?: string }> = Array.isArray(rawButtons) ? rawButtons : [];
+  const allButtons: Array<{ key: string; label: string; url: string; icon?: string; hidden?: boolean }> = Array.isArray(rawButtons) ? rawButtons : [];
+  // Filtrar botones ocultos: solo mostrar los visibles en la página pública
+  const buttons = allButtons.filter(btn => !btn.hidden);
+  const pageConfig = data?.publishedVersion?.config || {};
   const initial = business?.name?.charAt(0)?.toUpperCase() || slug.charAt(0).toUpperCase();
 
+  // Template configuration
+  const template = pageConfig.template || {};
+  const bgColor = template.bgColor || '#0f172a';
+  const bgGradient = template.bgGradient || 'from-gray-900 via-slate-900 to-gray-900';
+  const primaryColor = template.primaryColor || '#3b82f6';
+  const buttonStyle = template.buttonStyle || 'rounded'; // rounded, square, pill
+  const shapeMap: Record<string, string> = {
+    rounded: 'rounded-2xl',
+    square: 'rounded-lg',
+    pill: 'rounded-full',
+  };
+  const buttonShapeClass = shapeMap[buttonStyle] || 'rounded-2xl';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-bold">T</span>
-            </div>
-            <span className="text-sm font-medium text-gray-500">Taply</span>
-          </div>
-          <Link href="/" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-            Volver al inicio
-          </Link>
-        </div>
-      </header>
+    <div className={`min-h-screen bg-gradient-to-br ${bgGradient} relative overflow-hidden`}>
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl" />
+      </div>
 
       {/* Content */}
-      <main className="max-w-2xl mx-auto px-4 py-12">
-        <div className="text-center">
-          {/* Avatar */}
-          <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mx-auto flex items-center justify-center shadow-lg">
-            <span className="text-white text-3xl font-bold">{initial}</span>
-          </div>
-
-          {/* Business info */}
-          <h2 className="mt-6 text-2xl font-bold text-gray-900">{business?.name || slug}</h2>
-          {business?.description && (
-            <p className="mt-2 text-gray-500 max-w-md mx-auto">{business.description}</p>
+      <main className="relative max-w-lg mx-auto px-4 py-8 sm:py-12">
+        {/* Profile section */}
+        <div className="text-center mb-8">
+          {/* Logo / Avatar */}
+          {template.logoUrl ? (
+            <img
+              src={template.logoUrl}
+              alt={business?.name || slug}
+              className="w-24 h-24 rounded-2xl mx-auto object-cover shadow-2xl border-2 border-white/10"
+            />
+          ) : (
+            <div className="w-24 h-24 rounded-2xl mx-auto flex items-center justify-center shadow-2xl bg-gradient-to-br from-blue-500 to-indigo-600 border-2 border-white/10">
+              <span className="text-white text-3xl font-bold">{initial}</span>
+            </div>
           )}
 
-          {/* Buttons */}
-          <div className="mt-8 space-y-3">
-            {buttons.length > 0 ? (
-              buttons.map((btn) => (
-                <ButtonWithTracking
-                  key={btn.key}
-                  label={btn.label}
-                  url={btn.url}
-                  icon={btn.icon}
-                  pageId={pageId || ''}
-                  buttonKey={btn.key}
-                />
-              ))
-            ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <p className="text-sm text-gray-400">
-                  Este negocio aún no ha configurado botones.
-                </p>
+          {/* Business info */}
+          <h1 className="mt-6 text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            {business?.name || slug}
+          </h1>
+          {business?.description && (
+            <p className="mt-2 text-gray-400 max-w-sm mx-auto text-sm leading-relaxed">
+              {business.description}
+            </p>
+          )}
+        </div>
+
+        {/* Buttons section */}
+        <div className="space-y-3">
+          {buttons.length > 0 ? (
+            buttons.map((btn) => (
+              <ButtonWithTracking
+                key={btn.key}
+                label={btn.label}
+                url={btn.url}
+                icon={btn.icon}
+                pageId={pageId || ''}
+                buttonKey={btn.key}
+                buttonShape={buttonShapeClass}
+              />
+            ))
+          ) : (
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-8 text-center">
+              <div className="w-12 h-12 bg-white/5 rounded-xl mx-auto flex items-center justify-center mb-3">
+                <span className="text-2xl">👋</span>
               </div>
-            )}
-          </div>
+              <p className="text-sm text-gray-400">
+                Este negocio pronto tendrá contenido disponible.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Powered by */}
+        <div className="mt-12 text-center">
+          <Link href="/" className="inline-flex items-center gap-2 text-xs text-gray-500 hover:text-gray-400 transition-colors">
+            <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded flex items-center justify-center">
+              <span className="text-white text-[8px] font-bold">T</span>
+            </div>
+            Powered by Taply
+          </Link>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t bg-white/50">
-        <div className="max-w-2xl mx-auto px-4 py-4 text-center text-xs text-gray-400">
-          Powered by Taply
-        </div>
-      </footer>
     </div>
   );
 }

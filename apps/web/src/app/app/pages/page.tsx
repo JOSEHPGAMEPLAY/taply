@@ -14,8 +14,15 @@ import {
   MousePointerClick,
   ChevronDown,
   Settings,
+  Eye,
+  MoreVertical,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { Alert } from '@/components/ui/alert';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Modal } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
 
 /**
  * Tipos para los datos de la página.
@@ -58,13 +65,14 @@ export default function PagesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ businessId: '', slug: '' });
+  const [formData, setFormData] = useState({ businessId: '', slug: '', templateId: '' });
   const [submitting, setSubmitting] = useState(false);
   const [slugChecking, setSlugChecking] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [filterBusinessId, setFilterBusinessId] = useState<string>('');
   const [editingPage, setEditingPage] = useState<Page | null>(null);
+  const [templates, setTemplates] = useState<any[]>([]);
   const [buttons, setButtons] = useState<PageButton[]>([]);
   const [newButton, setNewButton] = useState({ key: '', label: '', url: '', icon: '' });
   const [savingButtons, setSavingButtons] = useState(false);
@@ -77,9 +85,10 @@ export default function PagesPage() {
     try {
       setLoading(true);
       const bizFilter = filterBusinessId || undefined;
-      const [bizData, pagesData] = await Promise.all([
+      const [bizData, pagesData, templatesData] = await Promise.all([
         api.getBusinesses().catch(() => []),
         api.getPages(bizFilter).catch(() => []),
+        api.getTemplates().catch(() => []),
       ]);
 
       const biz = (Array.isArray(bizData) ? bizData : []) as Business[];
@@ -92,6 +101,7 @@ export default function PagesPage() {
         return { ...page, businessName: foundBiz?.name || 'Desconocido' };
       });
       setPages(enrichedPages);
+      setTemplates(Array.isArray(templatesData) ? templatesData : []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudieron cargar los datos');
@@ -116,7 +126,7 @@ export default function PagesPage() {
    * Abre el modal para crear una nueva página.
    */
   const openCreateModal = () => {
-    setFormData({ businessId: filterBusinessId, slug: '' });
+    setFormData({ businessId: filterBusinessId, slug: '', templateId: '' });
     setSlugAvailable(null);
     setShowModal(true);
   };
@@ -152,10 +162,11 @@ export default function PagesPage() {
       setSubmitting(true);
       await api.createPage(formData.businessId, {
         slug: formData.slug.trim().toLowerCase().replace(/\s+/g, '-'),
+        templateId: formData.templateId || undefined,
       });
       showSuccess('Página creada correctamente');
       setShowModal(false);
-      setFormData({ businessId: filterBusinessId, slug: '' });
+      setFormData({ businessId: filterBusinessId, slug: '', templateId: '' });
       await loadData();
     } catch (err) {
       // Si es un error de slug duplicado, mostrar mensaje claro
@@ -259,27 +270,14 @@ export default function PagesPage() {
   };
 
   /**
-   * Renderiza el badge del estado de la página.
+   * Renderiza el dropdown de cambio de estado.
    */
-  const statusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      PUBLISHED: 'bg-green-100 text-green-700',
-      DRAFT: 'bg-gray-100 text-gray-700',
-      PAUSED: 'bg-yellow-100 text-yellow-700',
-      ARCHIVED: 'bg-red-100 text-red-700',
-    };
-    const labels: Record<string, string> = {
-      PUBLISHED: 'Publicada',
-      DRAFT: 'Borrador',
-      PAUSED: 'Pausada',
-      ARCHIVED: 'Archivada',
-    };
-    return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-700'}`}>
-        {labels[status] || status}
-      </span>
-    );
-  };
+  const statusOptions = [
+    { value: 'DRAFT', label: 'Borrador' },
+    { value: 'PUBLISHED', label: 'Publicada' },
+    { value: 'PAUSED', label: 'Pausada' },
+    { value: 'ARCHIVED', label: 'Archivada' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -300,22 +298,16 @@ export default function PagesPage() {
 
       {/* Success message */}
       {successMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-          <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-          <p className="text-sm text-green-700">{successMessage}</p>
-        </div>
+        <Alert variant="success" message={successMessage} onClose={() => setSuccessMessage(null)} />
       )}
 
       {/* Error message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
+        <Alert variant="error" message={error} onClose={() => setError(null)} />
       )}
 
       {/* Filter */}
-      {!loading && businesses.length > 1 && (
+      {businesses.length > 1 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Filtrar por negocio</label>
           <select
@@ -331,105 +323,160 @@ export default function PagesPage() {
         </div>
       )}
 
-      {/* Loading state */}
-      {loading && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        </div>
-      )}
-
       {/* Empty state */}
-      {!loading && pages.length === 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-          <FileText className="w-12 h-12 text-gray-300 mx-auto" />
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">
-            {businesses.length === 0 ? 'Crea un negocio primero' : 'No tienes páginas aún'}
-          </h3>
-          <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-            {businesses.length === 0
+      {pages.length === 0 && (
+        <EmptyState
+          icon={<FileText className="w-12 h-12" />}
+          title={businesses.length === 0 ? 'Crea un negocio primero' : 'No tienes páginas aún'}
+          description={
+            businesses.length === 0
               ? 'Necesitas crear un negocio antes de poder crear páginas digitales.'
-              : 'Crea tu primera página digital para que los clientes puedan acceder a tu negocio.'}
-          </p>
-          {businesses.length > 0 && (
-            <button
-              onClick={openCreateModal}
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
-            >
-              <Plus className="w-4 h-4" />
-              Crear primera página
-            </button>
-          )}
-        </div>
+              : 'Crea tu primera página digital para que los clientes puedan acceder a tu negocio.'
+          }
+          action={
+            businesses.length > 0
+              ? { label: 'Crear primera página', onClick: openCreateModal }
+              : undefined
+          }
+        />
       )}
 
-      {/* Pages table */}
-      {!loading && pages.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Slug</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 hidden md:table-cell">Negocio</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Estado</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 hidden lg:table-cell">Creada</th>
-                  <th className="text-right px-6 py-4 text-sm font-semibold text-gray-900">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pages.map((page) => (
-                  <tr key={page.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-gray-900">{page.slug}</p>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 hidden md:table-cell">
-                      {page.businessName}
-                    </td>
-                    <td className="px-6 py-4">{statusBadge(page.status)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 hidden lg:table-cell">
-                      {new Date(page.createdAt).toLocaleDateString('es-ES')}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="relative">
-                          <button
-                            onClick={(e) => {
-                              if (openStatusMenu?.pageId === page.id) {
-                                setOpenStatusMenu(null);
-                              } else {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setOpenStatusMenu({ pageId: page.id, rect });
-                              }
-                            }}
-                            className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                            title="Cambiar estado"
+      {/* Pages list — Cards en mobile, tabla en desktop */}
+      {pages.length > 0 && (
+        <>
+          {/* Mobile: Cards */}
+          <div className="md:hidden space-y-3">
+            {pages.map((page) => (
+              <div key={page.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{page.slug}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{page.businessName}</p>
+                  </div>
+                  <StatusBadge status={page.status} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">
+                    {new Date(page.createdAt).toLocaleDateString('es-ES')}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setOpenStatusMenu({ pageId: page.id, rect });
+                      }}
+                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                      title="Cambiar estado"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => router.push(`/app/pages/${page.id}/buttons?businessId=${page.businessId}`)}
+                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                      title="Gestionar botones"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+                    <a
+                      href={`/p/${page.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-gray-400 hover:text-green-600 transition-colors rounded-lg hover:bg-gray-100"
+                      title="Ver página"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </a>
+                    <button
+                      onClick={() => handleDelete(page)}
+                      className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: Tabla */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Slug</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 hidden lg:table-cell">Negocio</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Estado</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 hidden lg:table-cell">Creada</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-gray-900">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pages.map((page) => (
+                    <tr key={page.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-gray-900">{page.slug}</p>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 hidden lg:table-cell">
+                        {page.businessName}
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={page.status} />
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 hidden lg:table-cell">
+                        {new Date(page.createdAt).toLocaleDateString('es-ES')}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-1">
+                          <a
+                            href={`/p/${page.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 text-gray-400 hover:text-green-600 transition-colors rounded-lg hover:bg-gray-100"
+                            title="Ver página"
                           >
-                            {statusBadge(page.status)}
-                            <ChevronDown className="w-3 h-3" />
+                            <Eye className="w-4 h-4" />
+                          </a>
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                if (openStatusMenu?.pageId === page.id) {
+                                  setOpenStatusMenu(null);
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setOpenStatusMenu({ pageId: page.id, rect });
+                                }
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                              title="Cambiar estado"
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => router.push(`/app/pages/${page.id}/buttons?businessId=${page.businessId}`)}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                            title="Gestionar botones"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(page)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                        <button
-                          onClick={() => router.push(`/app/pages/${page.id}/buttons?businessId=${page.businessId}`)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                          title="Gestionar botones"
-                        >
-                          <Settings className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(page)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Create modal */}
@@ -515,6 +562,26 @@ export default function PagesPage() {
                   </p>
                 )}
               </div>
+
+              {/* Template selector */}
+              {templates.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Template (opcional)
+                  </label>
+                  <select
+                    value={formData.templateId}
+                    onChange={(e) => setFormData({ ...formData, templateId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="">Sin template (diseño por defecto)</option>
+                    {templates.map((t: any) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
@@ -662,7 +729,7 @@ export default function PagesPage() {
         </div>
       )}
 
-      {/* Status dropdown portal — rendered outside the table to avoid overflow clipping */}
+      {/* Status dropdown portal */}
       {openStatusMenu && (
         <>
           <div
@@ -676,7 +743,7 @@ export default function PagesPage() {
               left: openStatusMenu.rect.left + window.scrollX,
             }}
           >
-            {[{ value: 'DRAFT', label: 'Borrador' }, { value: 'PUBLISHED', label: 'Publicada' }, { value: 'PAUSED', label: 'Pausada' }, { value: 'ARCHIVED', label: 'Archivada' }].map((s) => (
+            {statusOptions.map((s) => (
               <button
                 key={s.value}
                 onClick={() => {
@@ -686,7 +753,7 @@ export default function PagesPage() {
                   }
                   setOpenStatusMenu(null);
                 }}
-                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors`}
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 transition-colors"
               >
                 {s.label}
               </button>

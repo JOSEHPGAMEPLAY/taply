@@ -1,37 +1,86 @@
-# Git Workflow Guidelines
+# Flujo de Trabajo Git — Taply
 
-## Regla Obligatoria: Commit y Push por Cada Archivo
+## Regla Obligatoria: Sincronizar `develop` con `main` después de cada Sprint
 
-**Cada archivo que se modifique, cree o elimine DEBE ser commiteado y pushado inmediatamente después del cambio.**
+Después de completar un sprint y hacer squash merge hacia `main`, **SIEMPRE** sincronizar la rama `develop` con `main` antes de continuar trabajando.
 
-### Flujo de Trabajo
+---
 
-1. **Modificar un archivo** → Editar el código.
-2. **Commit inmediato** → `git add <archivo>` + `git commit -m "descripción concisa" --trailer "Co-authored-by: Junie <junie@jetbrains.com>"`
-3. **Push inmediato** → `git push origin main` (o la rama actual)
-4. **Repetir** para el siguiente archivo.
+## Flujo Completo por Sprint
 
-### Reglas
+### 1. Trabajar en `develop`
+```bash
+git checkout develop
+git pull origin develop
+# ... hacer cambios, commits y pushes en develop ...
+```
 
-- **NUNCA** acumular cambios de múltiples archivos en un solo commit, a menos que sean cambios atómicos en el mismo archivo.
-- **NUNCA** dejar cambios sin commit al finalizar una tarea o sesión.
-- **SIEMPRE** usar mensajes de commit claros y descriptivos.
-- **SIEMPRE** incluir `--trailer "Co-authored-by: Junie <junie@jetbrains.com>"` en cada commit.
-- **SIEMPRE** pushar después de cada commit para mantener el repositorio sincronizado.
-- **VERIFICAR** que el push fue exitoso antes de continuar con el siguiente archivo.
+### 2. Completar el Sprint
+Cuando todas las issues del sprint estén implementadas y probadas:
+```bash
+git checkout develop
+git push origin develop
+```
 
-### Excepciones
+### 3. Squash Merge hacia `main`
+```bash
+git checkout main
+git pull origin main
+git merge develop --squash -m "Sprint N: descripción del sprint (#issue1, #issue2)"
+git commit --trailer "Co-authored-by: Junie <junie@jetbrains.com>"
+git push origin main
+```
 
-- Archivos generados automáticamente (`.tsbuildinfo`, `node_modules/`, `.next/`) NO se commitean.
-- Si un cambio requiere múltiples archivos para funcionar (ej: un nuevo endpoint con controller + service + DTO), se puede hacer un solo commit con todos los archivos relacionados, pero DEBE ser pushado inmediatamente.
+### 4. ⚠️ Sincronizar `develop` con `main` (OBLIGATORIO)
+```bash
+git checkout develop
+git merge main -m "chore: sync develop with main after Sprint N merge"
+git push origin develop
+```
 
-### Mensajes de Commit
+**Este paso es crítico** porque:
+- `develop` debe reflejar el estado actual de `main` después del squash merge.
+- Sin este paso, `develop` queda desincronizada y los siguientes merges tendrán conflictos o perderán cambios.
+- El squash merge en `main` crea un nuevo commit que no existe en `develop`.
 
-Usar el formato convencional:
-- `feat:` para nuevas funcionalidades
-- `fix:` para correcciones de bugs
-- `refactor:` para refactorizaciones
-- `docs:` para documentación
-- `chore:` para tareas de mantenimiento
+### 5. Cerrar Issues en GitHub
+Cerrar las issues completadas del sprint en GitHub.
 
-Ejemplo: `feat(sprint-3): add icon selector component`
+### 6. Continuar con el siguiente Sprint
+```bash
+git checkout develop
+# ... empezar a trabajar en el siguiente sprint ...
+```
+
+---
+
+## Resumen Visual
+
+```
+develop ──┐
+           ├──→ squash merge ──→ main (despliegue en Vercel)
+main ──────┘           │
+                       ↓
+              merge main → develop (sincronización)
+                       ↓
+              develop lista para siguiente sprint
+```
+
+---
+
+## Verificación
+
+Después de cada sprint, verificar que:
+1. ✅ `main` incluye el squash merge del sprint.
+2. ✅ `develop` está sincronizada con `main` (mismo commit base).
+3. ✅ Ambas ramas están pushadas a `origin`.
+4. ✅ Las issues del sprint están cerradas en GitHub.
+
+---
+
+## Notas
+
+- **NUNCA** trabajar directamente en `main`.
+- **NUNCA** saltar el paso de sincronización (paso 4).
+- **SIEMPRE** hacer squash merge para mantener `main` limpio.
+- **SIEMPRE** incluir `--trailer "Co-authored-by: Junie <junie@jetbrains.com>"` en commits.

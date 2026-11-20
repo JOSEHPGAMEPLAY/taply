@@ -1,11 +1,12 @@
 'use client';
 
 import { getIconByKey } from '@/lib/icon-map';
-import { MousePointerClick } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 
 /**
  * Botón con tracking de clicks para la página pública.
  * Registra un evento BUTTON_CLICK antes de redirigir al URL del botón.
+ * Diseño moderno con glassmorphism y soporte para personalización.
  */
 export default function ButtonWithTracking({
   buttonKey,
@@ -13,18 +14,19 @@ export default function ButtonWithTracking({
   url,
   icon,
   pageId,
+  buttonShape,
 }: {
   buttonKey: string;
   label: string;
   url: string;
   icon?: string;
   pageId: string;
+  buttonShape?: string;
 }) {
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
 
     if (!pageId) {
-      // Sin pageId, solo redirigir
       window.open(url, '_blank', 'noopener,noreferrer');
       return;
     }
@@ -39,13 +41,9 @@ export default function ButtonWithTracking({
         type: 'BUTTON_CLICK',
         buttonKey,
       }),
-      // keepAlive asegura que la petición se complete aunque la navegación empiece
       keepalive: true,
-    }).catch(() => {
-      // Silenciar errores: no queremos bloquear la redirección
-    });
+    }).catch(() => {});
 
-    // Redirigir al URL del botón
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -53,25 +51,30 @@ export default function ButtonWithTracking({
   const iconInfo = icon ? getIconByKey(icon) : undefined;
   const IconComponent = iconInfo?.component;
 
+  const shapeClass = buttonShape || 'rounded-2xl';
+
   return (
     <button
       type="button"
       onClick={handleClick}
-      className="block w-full bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-left hover:shadow-md hover:border-blue-200 transition-all group"
+      className={`block w-full bg-white/10 backdrop-blur-sm border border-white/10 p-4 text-left hover:bg-white/20 hover:border-white/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 group ${shapeClass}`}
     >
       <div className="flex items-center gap-3">
         {IconComponent ? (
-          <div className="flex items-center justify-center w-8 h-8 bg-blue-50 rounded-lg">
-            <IconComponent className="w-4 h-4 text-blue-600" />
+          <div className="flex items-center justify-center w-10 h-10 bg-white/10 rounded-xl group-hover:bg-white/20 transition-colors">
+            <IconComponent className="w-5 h-5 text-white" />
           </div>
         ) : icon ? (
-          // Fallback: si el icono no está en el mapeo, mostrarlo como texto
           <span className="text-xl">{icon}</span>
-        ) : null}
-        <span className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+        ) : (
+          <div className="flex items-center justify-center w-10 h-10 bg-white/10 rounded-xl">
+            <ArrowUpRight className="w-5 h-5 text-white/60" />
+          </div>
+        )}
+        <span className="flex-1 font-medium text-white group-hover:text-white transition-colors">
           {label}
         </span>
-        <span className="ml-auto text-gray-400 group-hover:text-blue-500">→</span>
+        <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white/80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
       </div>
     </button>
   );

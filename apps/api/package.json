@@ -12,9 +12,9 @@
     "dev": "nest start --watch",
     "start": "node dist/main",
     "lint": "eslint \"src/**/*.ts\"",
-    "test": "jest --runInBand --forceExit",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage --runInBand --forceExit",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
     "prisma": "prisma",
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate"
@@ -55,12 +55,14 @@
     "@types/supertest": "^7.2.1",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/coverage-v8": "^5.1.1",
     "eslint": "^9.0.0",
     "jest": "^30.0.0",
     "supertest": "^7.3.2",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.0",
-    "typescript": "^6.0.0"
+    "typescript": "^6.0.0",
+    "vitest": "^5.1.1"
   }
 }

@@ -43,7 +43,7 @@ export class PagesController {
   @ApiQuery({ name: 'businessId', required: false, type: String, description: 'ID del negocio (opcional)' })
   @ApiResponse({ status: 200, description: 'Lista de páginas' })
   async findAll(@Request() request: any, @Query('businessId') businessId: string) {
-    return this.pagesService.findAll(businessId || '', request.user?.sub);
+    return this.pagesService.findAll(businessId || '', request.user?.userId);
   }
 
   @Get(':id')

@@ -58,32 +58,6 @@ export default function DashboardPage() {
     };
   }, []);
 
-  /**
-   * Skeleton loader para las tarjetas de estadísticas.
-   */
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 md:p-8 text-white animate-pulse">
-          <div className="h-8 bg-white/20 rounded-lg w-64" />
-          <div className="h-4 bg-white/20 rounded w-96 mt-3" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-pulse">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="h-4 bg-gray-200 rounded w-20" />
-                  <div className="h-8 bg-gray-200 rounded w-12 mt-2" />
-                </div>
-                <div className="w-12 h-12 bg-gray-200 rounded-xl" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

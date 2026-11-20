@@ -24,7 +24,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      router.push('/app');
+      // La redirección a /app la maneja auth-context después de setUser
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
     } finally {

@@ -82,7 +82,7 @@ export default function IconSelector({
       </div>
 
       {/* Grid de iconos */}
-      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-64 overflow-y-auto p-1 border border-gray-200 rounded-lg">
+      <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-48 overflow-y-auto p-1 border border-gray-200 rounded-lg">
         {filteredIcons.map((icon) => {
           const isSelected = selectedKey === icon.key;
           const IconComponent = icon.component;
