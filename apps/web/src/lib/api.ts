@@ -478,6 +478,55 @@ export const api = {
     return apiRequest<{ total: number; admins: number; users: number; latestUserAt: string | null }>('GET', '/admin/users/stats');
   },
 
+  /**
+   * GET /admin/businesses (requiere JWT + rol ADMIN)
+   * Response: Array de todos los negocios con info del owner
+   */
+  async getAdminBusinesses() {
+    return apiRequest<Array<{
+      id: string;
+      name: string;
+      slug: string;
+      description?: string;
+      status: string;
+      ownerId: string;
+      owner?: { email: string; name: string };
+      createdAt: string;
+      updatedAt: string;
+    }>>('GET', '/admin/businesses');
+  },
+
+  /**
+   * PATCH /admin/businesses/:id/status (requiere JWT + rol ADMIN)
+   * Body: { status: 'ACTIVE' | 'PROSPECT' | 'SUSPENDED' | 'PAUSED' | 'CLOSED' }
+   */
+  async updateBusinessStatus(id: string, status: string) {
+    return apiRequest<{
+      id: string;
+      name: string;
+      slug: string;
+      description?: string;
+      status: string;
+      ownerId: string;
+      createdAt: string;
+      updatedAt: string;
+    }>('PATCH', `/admin/businesses/${id}/status`, { status });
+  },
+
+  /**
+   * GET /admin/analytics/overview (requiere JWT + rol ADMIN)
+   * Response: Métricas globales de la plataforma
+   */
+  async getAdminAnalyticsOverview() {
+    return apiRequest<{
+      users: { total: number; active: number; last30Days: number };
+      businesses: { total: number; active: number; last30Days: number };
+      pages: { total: number; published: number };
+      tags: { total: number; active: number };
+      events: { total: number; pageViews: number; buttonClicks: number; tagScans: number; last30Days: number };
+    }>('GET', '/admin/analytics/overview');
+  },
+
   // ==========================================
   // Templates — Requiere JWT, sin businessId
   // ==========================================

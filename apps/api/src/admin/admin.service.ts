@@ -264,6 +264,96 @@ export class AdminService {
   }
 
   /**
+   * Lista todos los negocios con filtros opcionales.
+   *
+   * @param filters - search (nombre), status
+   * @returns Array de negocios con información del owner
+   */
+  async findAllBusinesses(filters?: { search?: string; status?: string }) {
+    const where: any = {};
+
+    if (filters?.search) {
+      const search = filters.search.toLowerCase();
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { slug: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    if (filters?.status) where.status = filters.status;
+
+    const businesses = await this.prisma.business.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        status: true,
+        ownerId: true,
+        owner: {
+          select: {
+            email: true,
+            name: true,
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return businesses;
+  }
+
+  /**
+   * Cambia el estado de un negocio.
+   *
+   * @param businessId - ID del negocio a modificar
+   * @param status - Nuevo estado (PROSPECT, ACTIVE, PAUSED, SUSPENDED, CLOSED)
+   * @returns Negocio actualizado
+   * @throws NotFoundException si el negocio no existe
+   * @throws BadRequestException si el status no es válido
+   */
+  async updateBusinessStatus(
+    businessId: string,
+    status: 'PROSPECT' | 'ACTIVE' | 'PAUSED' | 'SUSPENDED' | 'CLOSED',
+  ) {
+    const business = await this.prisma.business.findUnique({ where: { id: businessId } });
+    if (!business) {
+      throw new NotFoundException('Negocio no encontrado');
+    }
+
+    const validStatuses = ['PROSPECT', 'ACTIVE', 'PAUSED', 'SUSPENDED', 'CLOSED'];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException('Estado inválido. Use PROSPECT, ACTIVE, PAUSED, SUSPENDED o CLOSED.');
+    }
+
+    const updatedBusiness = await this.prisma.business.update({
+      where: { id: businessId },
+      data: { status },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        status: true,
+        ownerId: true,
+        owner: {
+          select: {
+            email: true,
+            name: true,
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return updatedBusiness;
+  }
+
+  /**
    * Obtiene estadísticas de usuarios del sistema.
    *
    * @returns Conteo por rol y status, y fecha del último registro
@@ -289,6 +379,53 @@ export class AdminService {
       suspended,
       deactivated,
       latestUserAt: latestUser?.createdAt || null,
+    };
+  }
+
+  /**
+   * Obtiene analíticas globales de la plataforma.
+   *
+   * @returns Métricas agregadas de usuarios, negocios, páginas, tags y eventos
+   */
+  async getAnalyticsOverview() {
+    // Conteos totales
+    const totalUsers = await this.prisma.user.count();
+    const activeUsers = await this.prisma.user.count({ where: { status: 'ACTIVE' } });
+    const totalBusinesses = await this.prisma.business.count();
+    const activeBusinesses = await this.prisma.business.count({ where: { status: 'ACTIVE' } });
+    const totalPages = await this.prisma.page.count();
+    const publishedPages = await this.prisma.page.count({ where: { status: 'PUBLISHED' } });
+    const totalTags = await this.prisma.nfcTag.count();
+    const activeTags = await this.prisma.nfcTag.count({ where: { status: 'ACTIVE' } });
+
+    // Eventos totales
+    const totalEvents = await this.prisma.analyticsEvent.count();
+    const pageViews = await this.prisma.analyticsEvent.count({ where: { type: 'PAGE_VIEW' } });
+    const buttonClicks = await this.prisma.analyticsEvent.count({ where: { type: 'BUTTON_CLICK' } });
+    const tagScans = await this.prisma.analyticsEvent.count({ where: { type: 'TAG_SCAN' } });
+
+    // Eventos de los últimos 30 días
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const eventsLast30Days = await this.prisma.analyticsEvent.count({
+      where: { createdAt: { gte: thirtyDaysAgo } },
+    });
+
+    // Usuarios registrados en los últimos 30 días
+    const usersLast30Days = await this.prisma.user.count({
+      where: { createdAt: { gte: thirtyDaysAgo } },
+    });
+
+    // Negocios creados en los últimos 30 días
+    const businessesLast30Days = await this.prisma.business.count({
+      where: { createdAt: { gte: thirtyDaysAgo } },
+    });
+
+    return {
+      users: { total: totalUsers, active: activeUsers, last30Days: usersLast30Days },
+      businesses: { total: totalBusinesses, active: activeBusinesses, last30Days: businessesLast30Days },
+      pages: { total: totalPages, published: publishedPages },
+      tags: { total: totalTags, active: activeTags },
+      events: { total: totalEvents, pageViews, buttonClicks, tagScans, last30Days: eventsLast30Days },
     };
   }
 }

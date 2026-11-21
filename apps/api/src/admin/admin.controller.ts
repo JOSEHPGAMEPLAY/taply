@@ -4,6 +4,7 @@ import { AdminService } from './admin.service.js';
 import { AdminAuthGuard } from './guards/admin-auth.guard.js';
 import { UpdateRoleDto } from './dto/update-role.dto.js';
 import { UpdateStatusDto } from './dto/update-status.dto.js';
+import { UpdateBusinessStatusDto } from './dto/update-business-status.dto.js';
 import { BulkActionDto } from './dto/bulk-action.dto.js';
 
 /**
@@ -120,5 +121,48 @@ export class AdminController {
   @ApiResponse({ status: 403, description: 'No autorizado' })
   async getStats() {
     return this.adminService.getStats();
+  }
+
+  /**
+   * Lista todos los negocios con filtros opcionales.
+   */
+  @Get('businesses')
+  @ApiOperation({ summary: 'Listar negocios con filtros (solo admin)' })
+  @ApiQuery({ name: 'search', required: false, description: 'Buscar por nombre, slug o descripción' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filtrar por status (PROSPECT/ACTIVE/PAUSED/SUSPENDED/CLOSED)' })
+  @ApiResponse({ status: 200, description: 'Lista de negocios' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
+  async findAllBusinesses(
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.adminService.findAllBusinesses({ search, status });
+  }
+
+  /**
+   * Cambia el estado de un negocio.
+   */
+  @Patch('businesses/:id/status')
+  @ApiOperation({ summary: 'Cambiar estado de un negocio (solo admin)' })
+  @ApiResponse({ status: 200, description: 'Estado actualizado' })
+  @ApiResponse({ status: 400, description: 'Estado inválido' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Negocio no encontrado' })
+  async updateBusinessStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateBusinessStatusDto,
+  ) {
+    return this.adminService.updateBusinessStatus(id, dto.status);
+  }
+
+  /**
+   * Obtiene analíticas globales de la plataforma.
+   */
+  @Get('analytics/overview')
+  @ApiOperation({ summary: 'Analíticas globales de la plataforma (solo admin)' })
+  @ApiResponse({ status: 200, description: 'Métricas de la plataforma' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
+  async getAnalyticsOverview() {
+    return this.adminService.getAnalyticsOverview();
   }
 }
