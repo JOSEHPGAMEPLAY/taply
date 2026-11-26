@@ -12,7 +12,7 @@ import {
   QrCode,
   Copy,
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, type BusinessAccessRole } from '@/lib/api';
 
 /**
  * Tipos para los datos de la etiqueta NFC.
@@ -22,6 +22,7 @@ interface NfcTag {
   token: string;
   status: string;
   businessId: string;
+  accessRole?: BusinessAccessRole;
   assignedPageId: string | null;
   createdAt: string;
   updatedAt?: string;
@@ -34,6 +35,7 @@ interface NfcTag {
 interface Business {
   id: string;
   name: string;
+  accessRole: BusinessAccessRole;
 }
 
 interface Page {
@@ -41,6 +43,11 @@ interface Page {
   slug: string;
   businessId: string;
 }
+
+const canManageTags = (role?: BusinessAccessRole) =>
+  role === 'OWNER' || role === 'ADMIN' || role === 'GLOBAL_ADMIN';
+
+const canViewTags = (role?: BusinessAccessRole) => canManageTags(role) || role === 'VIEWER';
 
 /**
  * Página de gestión de etiquetas NFC con CRUD y asignación.
@@ -76,8 +83,13 @@ export default function NfcTagsPage() {
         api.getPages().catch(() => []),
       ]);
 
-      setBusinesses((Array.isArray(bizData) ? bizData : []) as Business[]);
-      setTags((Array.isArray(tagsData) ? tagsData : []) as NfcTag[]);
+      const businessList = (Array.isArray(bizData) ? bizData : []) as Business[];
+      const roleByBusiness = new Map(businessList.map((business) => [business.id, business.accessRole]));
+      setBusinesses(businessList);
+      setTags(((Array.isArray(tagsData) ? tagsData : []) as NfcTag[]).map((tag) => ({
+        ...tag,
+        accessRole: roleByBusiness.get(tag.businessId),
+      })));
       setPages((Array.isArray(pagesData) ? pagesData : []) as Page[]);
       setError(null);
     } catch (err) {
@@ -103,7 +115,11 @@ export default function NfcTagsPage() {
    * Abre el modal para crear una nueva etiqueta.
    */
   const openCreateModal = () => {
-    setFormData({ businessId: filterBusinessId });
+    const managedBusinesses = businesses.filter((business) => canManageTags(business.accessRole));
+    const businessId = managedBusinesses.some((business) => business.id === filterBusinessId)
+      ? filterBusinessId
+      : managedBusinesses[0]?.id || '';
+    setFormData({ businessId });
     setShowModal(true);
   };
 
@@ -166,7 +182,7 @@ export default function NfcTagsPage() {
 
     try {
       // Find the page assigned to this tag
-      const assignedPage = pages.find((p) => p.businessId === tag.businessId);
+      const assignedPage = pages.find((p) => p.id === tag.assignment?.pageId && p.businessId === tag.businessId);
       if (assignedPage) {
         const result = await api.generateQr(assignedPage.id);
         // Assuming the API returns { dataUrl: 'data:image/...' }
@@ -221,6 +237,8 @@ export default function NfcTagsPage() {
   const getPagesForTag = (tag: NfcTag) => {
     return pages.filter((p) => p.businessId === tag.businessId);
   };
+  const viewableBusinesses = businesses.filter((business) => canViewTags(business.accessRole));
+  const canCreateTags = businesses.some((business) => canManageTags(business.accessRole));
 
   return (
     <div className="space-y-6">
@@ -230,13 +248,15 @@ export default function NfcTagsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Etiquetas NFC</h1>
           <p className="text-sm text-gray-500 mt-1">Gestiona tus etiquetas NFC y códigos QR</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
-        >
-          <Plus className="w-4 h-4" />
-          Nueva etiqueta
-        </button>
+        {canCreateTags && (
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
+          >
+            <Plus className="w-4 h-4" />
+            Nueva etiqueta
+          </button>
+        )}
       </div>
 
       {/* Success message */}
@@ -256,7 +276,7 @@ export default function NfcTagsPage() {
       )}
 
       {/* Filter */}
-      {!loading && businesses.length > 1 && (
+      {!loading && viewableBusinesses.length > 1 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Filtrar por negocio</label>
           <select
@@ -265,7 +285,7 @@ export default function NfcTagsPage() {
             className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
           >
             <option value="">Todos los negocios</option>
-            {businesses.map((biz) => (
+            {viewableBusinesses.map((biz) => (
               <option key={biz.id} value={biz.id}>{biz.name}</option>
             ))}
           </select>
@@ -283,11 +303,15 @@ export default function NfcTagsPage() {
       {!loading && tags.length === 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
           <Radio className="w-12 h-12 text-gray-300 mx-auto" />
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">No tienes etiquetas aún</h3>
+          <h3 className="mt-4 text-lg font-semibold text-gray-900">
+            {viewableBusinesses.length === 0 ? 'Tu rol no tiene acceso a etiquetas' : 'No tienes etiquetas aún'}
+          </h3>
           <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-            Crea etiquetas NFC para que los clientes puedan acceder a tus páginas digitales con un solo toque.
+            {viewableBusinesses.length === 0
+              ? 'Solicita al propietario del negocio un rol con acceso a etiquetas NFC.'
+              : 'Crea etiquetas NFC para que los clientes puedan acceder a tus páginas digitales con un solo toque.'}
           </p>
-          {businesses.length > 0 && (
+          {canCreateTags && (
             <button
               onClick={openCreateModal}
               className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
@@ -333,20 +357,24 @@ export default function NfcTagsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openAssignModal(tag)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                          title="Asignar a página"
-                        >
-                          <Link className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleGenerateQr(tag)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                          title="Generar QR"
-                        >
-                          <QrCode className="w-4 h-4" />
-                        </button>
+                        {canManageTags(tag.accessRole) && (
+                          <>
+                            <button
+                              onClick={() => openAssignModal(tag)}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+                              title="Asignar a página"
+                            >
+                              <Link className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleGenerateQr(tag)}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+                              title="Generar QR"
+                            >
+                              <QrCode className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -382,7 +410,7 @@ export default function NfcTagsPage() {
                   required
                 >
                   <option value="">Selecciona un negocio</option>
-                  {businesses.map((biz) => (
+                  {businesses.filter((biz) => canManageTags(biz.accessRole)).map((biz) => (
                     <option key={biz.id} value={biz.id}>{biz.name}</option>
                   ))}
                 </select>

@@ -30,7 +30,7 @@ export class AnalyticsController {
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   async getStats(@Query() dto: AnalyticsQueryDto, @Request() request: { user: { userId: string } }) {
-    return this.analyticsService.getStats(dto, request.user?.userId);
+    return this.analyticsService.getStats(dto, request.user);
   }
 
   @Get('export')
@@ -44,7 +44,7 @@ export class AnalyticsController {
   @ApiResponse({ status: 200, description: 'Archivo CSV con eventos de analíticas' })
   @ApiResponse({ status: 404, description: 'Página no encontrada' })
   async exportCsv(@Query() dto: AnalyticsQueryDto, @Request() request: { user: { userId: string } }): Promise<string> {
-    return this.analyticsService.exportCsv(dto, request.user?.userId);
+    return this.analyticsService.exportCsv(dto, request.user);
   }
 
   @Delete('events/prune')
@@ -55,11 +55,15 @@ export class AnalyticsController {
   @ApiQuery({ name: 'months', required: false, type: Number, description: 'Meses de retención (default: 12)' })
   @ApiResponse({ status: 200, description: 'Eventos eliminados exitosamente' })
   @ApiResponse({ status: 400, description: 'Meses inválidos' })
-  async pruneEvents(@Query('months') months?: string) {
+  @ApiResponse({ status: 403, description: 'Solo un administrador global puede eliminar eventos' })
+  async pruneEvents(
+    @Query('months') months: string | undefined,
+    @Request() request: { user: { userId: string; role?: string } },
+  ) {
     const retentionMonths = months ? parseInt(months, 10) : 12;
     if (isNaN(retentionMonths) || retentionMonths < 0 || retentionMonths > 60) {
       throw new BadRequestException('Meses debe ser un número entre 0 y 60');
     }
-    return this.analyticsService.pruneEvents(retentionMonths);
+    return this.analyticsService.pruneEvents(retentionMonths, request.user);
   }
 }

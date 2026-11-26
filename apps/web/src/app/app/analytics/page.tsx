@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Download,
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, type BusinessAccessRole } from '@/lib/api';
 
 /**
  * Tipos para las estadísticas de analíticas.
@@ -30,6 +30,7 @@ interface Stats {
 interface Page {
   id: string;
   slug: string;
+  businessId: string;
 }
 
 /**
@@ -38,6 +39,7 @@ interface Page {
  */
 export default function AnalyticsPage() {
   const [pages, setPages] = useState<Page[]>([]);
+  const [hasPagesWithoutAnalyticsAccess, setHasPagesWithoutAnalyticsAccess] = useState(false);
   const [selectedPageId, setSelectedPageId] = useState<string>('');
   const [rangeDays, setRangeDays] = useState(30);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -52,9 +54,16 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const loadPages = async () => {
       try {
-        const data = await api.getPages();
-        const pagesList = (Array.isArray(data) ? data : []) as Page[];
+        const [data, businessData] = await Promise.all([api.getPages(), api.getBusinesses()]);
+        const allPages = (Array.isArray(data) ? data : []) as Page[];
+        const businesses = Array.isArray(businessData) ? businessData : [];
+        const roleByBusiness = new Map(businesses.map((business) => [business.id, business.accessRole as BusinessAccessRole]));
+        const pagesList = allPages.filter((page) => {
+          const role = roleByBusiness.get(page.businessId);
+          return role === 'OWNER' || role === 'ADMIN' || role === 'ANALYST' || role === 'GLOBAL_ADMIN';
+        });
         setPages(pagesList);
+        setHasPagesWithoutAnalyticsAccess(allPages.length > 0 && pagesList.length === 0);
         if (pagesList.length > 0 && pagesList[0]) {
           setSelectedPageId(pagesList[0].id);
         }
@@ -215,9 +224,13 @@ export default function AnalyticsPage() {
       {!loading && pages.length === 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
           <BarChart3 className="w-12 h-12 text-gray-300 mx-auto" />
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">No hay páginas para analizar</h3>
+          <h3 className="mt-4 text-lg font-semibold text-gray-900">
+            {hasPagesWithoutAnalyticsAccess ? 'Tu rol no tiene acceso a analíticas' : 'No hay páginas para analizar'}
+          </h3>
           <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-            Crea y publica una página para comenzar a ver las métricas de visitas y clics.
+            {hasPagesWithoutAnalyticsAccess
+              ? 'Solicita al propietario del negocio el rol de analista o administrador para consultar estas métricas.'
+              : 'Crea y publica una página para comenzar a ver las métricas de visitas y clics.'}
           </p>
         </div>
       )}

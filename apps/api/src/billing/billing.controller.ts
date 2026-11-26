@@ -1,4 +1,4 @@
-﻿import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
+﻿import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { BillingService } from './billing.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
@@ -27,8 +27,8 @@ export class BillingController {
   @ApiBody({ type: CreateProductDto })
   @ApiResponse({ status: 201, description: 'Producto creado exitosamente' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async createProduct(@Body() dto: CreateProductDto) {
-    return this.billingService.createProduct(dto);
+  async createProduct(@Body() dto: CreateProductDto, @Request() request: any) {
+    return this.billingService.createProduct(dto, request.user);
   }
 
   @Get('products')
@@ -44,7 +44,7 @@ export class BillingController {
   @ApiResponse({ status: 201, description: 'Orden creada exitosamente' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 404, description: 'Negocio o producto no encontrado' })
-  async createOrder(@Body() dto: CreateOrderDto) {
-    return this.billingService.createOrder(dto);
+  async createOrder(@Body() dto: CreateOrderDto, @Request() request: any) {
+    return this.billingService.createOrder(dto, request.user);
   }
 }

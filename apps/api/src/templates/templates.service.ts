@@ -1,6 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
+import { AccessControlService, AuthenticatedUser } from '../authorization/access-control.service.js';
 import { CreateTemplateDto } from './dto/create-template.dto.js';
 import { UpdateTemplateDto } from './dto/update-template.dto.js';
 
@@ -15,7 +16,10 @@ import { UpdateTemplateDto } from './dto/update-template.dto.js';
  */
 @Injectable()
 export class TemplatesService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    private readonly accessControl: AccessControlService,
+  ) {}
 
   /**
    * Lista todos los templates.
@@ -40,7 +44,8 @@ export class TemplatesService {
   /**
    * Crea un nuevo template.
    */
-  async create(dto: CreateTemplateDto) {
+  async create(dto: CreateTemplateDto, user: AuthenticatedUser) {
+    this.accessControl.assertGlobalAdmin(user);
     const template = await this.prisma.template.create({
       data: {
         name: dto.name,
@@ -55,7 +60,8 @@ export class TemplatesService {
   /**
    * Actualiza un template por ID.
    */
-  async update(id: string, dto: UpdateTemplateDto) {
+  async update(id: string, dto: UpdateTemplateDto, user: AuthenticatedUser) {
+    this.accessControl.assertGlobalAdmin(user);
     await this.findOne(id);
     const template = await this.prisma.template.update({
       where: { id },
@@ -67,7 +73,8 @@ export class TemplatesService {
   /**
    * Elimina un template por ID.
    */
-  async remove(id: string) {
+  async remove(id: string, user: AuthenticatedUser) {
+    this.accessControl.assertGlobalAdmin(user);
     await this.findOne(id);
     await this.prisma.template.delete({ where: { id } });
   }

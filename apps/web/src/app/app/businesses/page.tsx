@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Building2,
   Plus,
@@ -10,8 +11,9 @@ import {
   Check,
   AlertCircle,
   Loader2,
+  Users,
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, type BusinessAccessRole } from '@/lib/api';
 
 /**
  * Tipos para los datos del negocio.
@@ -22,6 +24,8 @@ interface Business {
   slug: string;
   description: string | null;
   status: string;
+  ownerId: string;
+  accessRole: BusinessAccessRole;
   createdAt: string;
 }
 
@@ -174,6 +178,18 @@ export default function BusinessesPage() {
     );
   };
 
+  const accessRoleLabels: Record<BusinessAccessRole, string> = {
+    OWNER: 'Propietario',
+    ADMIN: 'Administrador',
+    EDITOR: 'Editor',
+    ANALYST: 'Analista',
+    VIEWER: 'Lector',
+    GLOBAL_ADMIN: 'Administrador global',
+  };
+  const canEditBusiness = (role: BusinessAccessRole) =>
+    role === 'OWNER' || role === 'ADMIN' || role === 'GLOBAL_ADMIN';
+  const canDeleteBusiness = (role: BusinessAccessRole) => role === 'OWNER' || role === 'GLOBAL_ADMIN';
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -260,27 +276,50 @@ export default function BusinessesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => toggleStatus(biz)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                          title={biz.status === 'ACTIVE' ? 'Pausar' : 'Activar'}
-                        >
-                          {biz.status === 'ACTIVE' ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={() => openEditModal(biz)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                          title="Editar"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(biz.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {biz.accessRole === 'OWNER' || biz.accessRole === 'GLOBAL_ADMIN' ? (
+                          <Link
+                            href={`/app/businesses/${biz.id}/members`}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                            title="Gestionar miembros"
+                            aria-label={`Gestionar miembros de ${biz.name}`}
+                          >
+                            <Users className="w-4 h-4" />
+                          </Link>
+                        ) : (
+                          <span
+                            className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full"
+                            title="Tu acceso a este negocio"
+                          >
+                            {accessRoleLabels[biz.accessRole]}
+                          </span>
+                        )}
+                        {canEditBusiness(biz.accessRole) && (
+                          <>
+                            <button
+                              onClick={() => toggleStatus(biz)}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+                              title={biz.status === 'ACTIVE' ? 'Pausar' : 'Activar'}
+                            >
+                              {biz.status === 'ACTIVE' ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                            </button>
+                            <button
+                              onClick={() => openEditModal(biz)}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+                              title="Editar"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                        {canDeleteBusiness(biz.accessRole) && (
+                          <button
+                            onClick={() => handleDelete(biz.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

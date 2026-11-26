@@ -1,45 +1,43 @@
 # Autorización — Taply
 
-## Verificación de ownership
+## Modelo de acceso
 
-Taply usa un modelo de autorización basado en ownership. Cada recurso pertenece a un negocio, y cada negocio pertenece a un usuario. Solo el owner del negocio puede modificar sus recursos.
+Cada recurso operativo pertenece a un negocio. El propietario se mantiene en `Business.ownerId`; los accesos delegados se guardan en `BusinessMembership` y se consultan desde la base de datos en cada solicitud. El backend valida tanto la identidad autenticada como la empresa a la que pertenece el recurso; no confía únicamente en `businessId` o `pageId` enviados por el cliente.
 
-### Flujo de verificación
-
-1. El usuario autenticado envía una request a un endpoint protegido.
-2. El backend extrae el `userId` del token JWT.
-3. El backend verifica que el `userId` coincide con el `ownerId` del negocio asociado al recurso.
-4. Si coincide, permite la operación. Si no, retorna `403 Forbidden`.
-
-### Ejemplo
-
-```typescript
-// En BusinessesService
-const business = await this.prisma.business.findUnique({ where: { id } });
-if (!business) throw new NotFoundException('Negocio no encontrado');
-if (business.ownerId !== userId) throw new ForbiddenException('No tienes permiso');
-```
+Las cuentas de membresía son cuentas ya registradas. Una cuenta puede tener como máximo una membresía de negocio. El propietario y el administrador global no necesitan una membresía para acceder.
 
 ## Roles
 
-| Rol | Descripción |
-|---|---|
-| USER | Usuario regular, puede gestionar sus propios negocios. |
-| ADMIN | Administrador de Taply (reservado para futuro uso). |
+`User.role` es global y distinto del rol de negocio.
 
-Actualmente solo existe el rol USER. El rol ADMIN se implementará cuando se necesite un panel administrativo de super-admins.
+| Rol global | Alcance |
+|---|---|
+| `USER` | Acceso a los negocios que posee o donde tiene una membresía activa. |
+| `ADMIN` | Administrador global de Taply; acceso a todos los negocios, usuarios y plantillas. |
+
+`BusinessMembership.role` controla el acceso delegado a un negocio. `OWNER` se deriva de `Business.ownerId` y no se asigna como membresía.
+
+| Rol de negocio | Permisos |
+|---|---|
+| `OWNER` | Acceso completo; único rol de negocio que administra miembros y elimina el negocio. |
+| `ADMIN` | Gestiona datos del negocio, páginas, publicación, etiquetas NFC/QR y analíticas; no administra miembros. |
+| `EDITOR` | Crea y edita páginas y botones, cambia plantillas y publica; no gestiona negocio, etiquetas ni analíticas. |
+| `ANALYST` | Consulta páginas y analíticas, sin cambios. |
+| `VIEWER` | Consulta páginas y etiquetas NFC, sin cambios ni acceso a analíticas. |
+
+El `ADMIN` global puede realizar todas las operaciones anteriores. Solo el `OWNER` o un `ADMIN` global puede agregar, cambiar el rol o retirar miembros. Las plantillas son un catálogo global: los usuarios autenticados pueden consultarlo, pero solo el `ADMIN` global puede modificarlo.
 
 ## Multi-tenancy
 
 Taply es una aplicación multi-tenant por diseño. Cada negocio es un tenant independiente:
 
-- **Aislamiento de datos**: Las consultas siempre filtran por `businessId` o `ownerId`. Un usuario nunca puede ver los datos de otro negocio.
+- **Aislamiento de datos**: las operaciones filtran por `businessId` y comprueban ownership o membresía; usuarios sin acceso reciben `403 Forbidden`.
 - **Slugs únicos**: Los slugs de negocios y páginas son únicos a nivel global para evitar colisiones en URLs públicas.
 - **Tokens NFC únicos**: Los tokens de etiquetas NFC son únicos a nivel global para evitar colisiones en la resolución pública.
 
 ## Aislamiento entre negocios
 
-- Un usuario puede tener múltiples negocios, pero solo puede acceder a los suyos.
+- Un usuario regular puede acceder a negocios que posee y, como máximo, a un negocio asignado como miembro; cada membresía queda limitada a su empresa.
 - Las páginas, etiquetas NFC, órdenes y suscripciones están vinculadas a un negocio específico.
 - Las analíticas solo muestran los eventos de las páginas del negocio del usuario autenticado.
 - Los endpoints públicos (`/public/nfc/:token`, `/public/analytics/events`) no requieren autenticación, pero no exponen datos sensibles.

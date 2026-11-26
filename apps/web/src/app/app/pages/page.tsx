@@ -16,8 +16,9 @@ import {
   Settings,
   Eye,
   MoreVertical,
+  LayoutTemplate,
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, type BusinessAccessRole } from '@/lib/api';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -32,8 +33,15 @@ interface Page {
   slug: string;
   status: string;
   businessId: string;
+  templateId?: string | null;
+  accessRole?: BusinessAccessRole;
   businessName?: string;
   createdAt: string;
+}
+
+interface Template {
+  id: string;
+  name: string;
 }
 
 /**
@@ -52,7 +60,14 @@ interface PageButton {
 interface Business {
   id: string;
   name: string;
+  accessRole: BusinessAccessRole;
 }
+
+const canManagePages = (role?: BusinessAccessRole) =>
+  role === 'OWNER' || role === 'ADMIN' || role === 'EDITOR' || role === 'GLOBAL_ADMIN';
+
+const canManageAllPageStatuses = (role?: BusinessAccessRole) =>
+  role === 'OWNER' || role === 'ADMIN' || role === 'GLOBAL_ADMIN';
 
 /**
  * Página de gestión de páginas con CRUD y publish workflow.
@@ -72,11 +87,14 @@ export default function PagesPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [filterBusinessId, setFilterBusinessId] = useState<string>('');
   const [editingPage, setEditingPage] = useState<Page | null>(null);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [buttons, setButtons] = useState<PageButton[]>([]);
   const [newButton, setNewButton] = useState({ key: '', label: '', url: '', icon: '' });
   const [savingButtons, setSavingButtons] = useState(false);
   const [openStatusMenu, setOpenStatusMenu] = useState<{ pageId: string; rect: DOMRect } | null>(null);
+  const [templatePage, setTemplatePage] = useState<Page | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   /**
    * Carga las páginas y negocios desde la API.
@@ -93,12 +111,17 @@ export default function PagesPage() {
 
       const biz = (Array.isArray(bizData) ? bizData : []) as Business[];
       setBusinesses(biz);
+      const businessById = new Map(biz.map((business) => [business.id, business]));
 
       // Enrich pages with business name
       const pagesArray = (Array.isArray(pagesData) ? pagesData : []) as Page[];
       const enrichedPages = pagesArray.map((page: Page) => {
-        const foundBiz = biz.find((b: Business) => b.id === page.businessId);
-        return { ...page, businessName: foundBiz?.name || 'Desconocido' };
+        const foundBiz = businessById.get(page.businessId);
+        return {
+          ...page,
+          businessName: foundBiz?.name || 'Desconocido',
+          accessRole: foundBiz?.accessRole,
+        };
       });
       setPages(enrichedPages);
       setTemplates(Array.isArray(templatesData) ? templatesData : []);
@@ -126,7 +149,11 @@ export default function PagesPage() {
    * Abre el modal para crear una nueva página.
    */
   const openCreateModal = () => {
-    setFormData({ businessId: filterBusinessId, slug: '', templateId: '' });
+    const manageableBusinesses = businesses.filter((business) => canManagePages(business.accessRole));
+    const selectedBusinessId = manageableBusinesses.some((business) => business.id === filterBusinessId)
+      ? filterBusinessId
+      : manageableBusinesses[0]?.id || '';
+    setFormData({ businessId: selectedBusinessId, slug: '', templateId: '' });
     setSlugAvailable(null);
     setShowModal(true);
   };
@@ -197,6 +224,28 @@ export default function PagesPage() {
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cambiar el estado');
+    }
+  };
+
+  const openTemplateSelector = (page: Page) => {
+    setTemplatePage(page);
+    setSelectedTemplateId(page.templateId || '');
+  };
+
+  const savePageTemplate = async () => {
+    if (!templatePage) return;
+    try {
+      setSavingTemplate(true);
+      await api.updatePage(templatePage.id, templatePage.businessId, {
+        templateId: selectedTemplateId || null,
+      });
+      showSuccess('Plantilla guardada en un nuevo borrador');
+      setTemplatePage(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo cambiar la plantilla');
+    } finally {
+      setSavingTemplate(false);
     }
   };
 
@@ -278,6 +327,7 @@ export default function PagesPage() {
     { value: 'PAUSED', label: 'Pausada' },
     { value: 'ARCHIVED', label: 'Archivada' },
   ];
+  const canCreatePages = businesses.some((business) => canManagePages(business.accessRole));
 
   return (
     <div className="space-y-6">
@@ -287,13 +337,15 @@ export default function PagesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Páginas</h1>
           <p className="text-sm text-gray-500 mt-1">Gestiona tus páginas digitales</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
-        >
-          <Plus className="w-4 h-4" />
-          Nueva página
-        </button>
+        {canCreatePages && (
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
+          >
+            <Plus className="w-4 h-4" />
+            Nueva página
+          </button>
+        )}
       </div>
 
       {/* Success message */}
@@ -333,11 +385,7 @@ export default function PagesPage() {
               ? 'Necesitas crear un negocio antes de poder crear páginas digitales.'
               : 'Crea tu primera página digital para que los clientes puedan acceder a tu negocio.'
           }
-          action={
-            businesses.length > 0
-              ? { label: 'Crear primera página', onClick: openCreateModal }
-              : undefined
-          }
+          action={canCreatePages ? { label: 'Crear primera página', onClick: openCreateModal } : undefined}
         />
       )}
 
@@ -360,23 +408,42 @@ export default function PagesPage() {
                     {new Date(page.createdAt).toLocaleDateString('es-ES')}
                   </span>
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setOpenStatusMenu({ pageId: page.id, rect });
-                      }}
-                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
-                      title="Cambiar estado"
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => router.push(`/app/pages/${page.id}/buttons?businessId=${page.businessId}`)}
-                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
-                      title="Gestionar botones"
-                    >
-                      <Settings className="w-4 h-4" />
-                    </button>
+                    {canManagePages(page.accessRole) && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setOpenStatusMenu({ pageId: page.id, rect });
+                          }}
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                          title="Cambiar estado"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openTemplateSelector(page)}
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                          title="Cambiar plantilla"
+                          aria-label={`Cambiar plantilla de ${page.slug}`}
+                        >
+                          <LayoutTemplate className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => router.push(`/app/pages/${page.id}/buttons?businessId=${page.businessId}`)}
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                          title="Gestionar botones"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(page)}
+                          className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
                     <a
                       href={`/p/${page.slug}`}
                       target="_blank"
@@ -386,13 +453,6 @@ export default function PagesPage() {
                     >
                       <Eye className="w-4 h-4" />
                     </a>
-                    <button
-                      onClick={() => handleDelete(page)}
-                      className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               </div>
@@ -438,36 +498,48 @@ export default function PagesPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </a>
-                          <div className="relative">
-                            <button
-                              onClick={(e) => {
-                                if (openStatusMenu?.pageId === page.id) {
-                                  setOpenStatusMenu(null);
-                                } else {
-                                  const rect = e.currentTarget.getBoundingClientRect();
-                                  setOpenStatusMenu({ pageId: page.id, rect });
-                                }
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
-                              title="Cambiar estado"
-                            >
-                              <ChevronDown className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <button
-                            onClick={() => router.push(`/app/pages/${page.id}/buttons?businessId=${page.businessId}`)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
-                            title="Gestionar botones"
-                          >
-                            <Settings className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(page)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {canManagePages(page.accessRole) && (
+                            <>
+                              <button
+                                onClick={() => openTemplateSelector(page)}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                                title="Cambiar plantilla"
+                                aria-label={`Cambiar plantilla de ${page.slug}`}
+                              >
+                                <LayoutTemplate className="w-4 h-4" />
+                              </button>
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    if (openStatusMenu?.pageId === page.id) {
+                                      setOpenStatusMenu(null);
+                                    } else {
+                                      const rect = e.currentTarget.getBoundingClientRect();
+                                      setOpenStatusMenu({ pageId: page.id, rect });
+                                    }
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                                  title="Cambiar estado"
+                                >
+                                  <ChevronDown className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <button
+                                onClick={() => router.push(`/app/pages/${page.id}/buttons?businessId=${page.businessId}`)}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                                title="Gestionar botones"
+                              >
+                                <Settings className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(page)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -504,7 +576,7 @@ export default function PagesPage() {
                   required
                 >
                   <option value="">Selecciona un negocio</option>
-                  {businesses.map((biz) => (
+                  {businesses.filter((biz) => canManagePages(biz.accessRole)).map((biz) => (
                     <option key={biz.id} value={biz.id}>{biz.name}</option>
                   ))}
                 </select>
@@ -575,7 +647,7 @@ export default function PagesPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   >
                     <option value="">Sin template (diseño por defecto)</option>
-                    {templates.map((t: any) => (
+                    {templates.map((t) => (
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>
@@ -604,6 +676,69 @@ export default function PagesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Template selector modal */}
+      {templatePage && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Cambiar plantilla</h2>
+                <p className="text-sm text-gray-500 mt-0.5">/{templatePage.slug}</p>
+              </div>
+              <button
+                onClick={() => setTemplatePage(null)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="page-template">
+                  Plantilla
+                </label>
+                <select
+                  id="page-template"
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="">Sin plantilla (diseño por defecto)</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>{template.name}</option>
+                  ))}
+                </select>
+                {templates.length === 0 && (
+                  <p className="mt-1 text-xs text-gray-500">No hay plantillas disponibles; puedes dejar esta página sin plantilla.</p>
+                )}
+              </div>
+              <p className="rounded-lg bg-blue-50 px-3 py-2.5 text-sm text-blue-800">
+                El cambio crea un borrador y se verá en la página pública cuando lo publiques. El contenido actual se conserva.
+              </p>
+              <div className="flex items-center justify-end gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setTemplatePage(null)}
+                  className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  disabled={savingTemplate}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={savePageTemplate}
+                  disabled={savingTemplate}
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  {savingTemplate ? 'Guardando…' : 'Guardar borrador'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -743,7 +878,12 @@ export default function PagesPage() {
               left: openStatusMenu.rect.left + window.scrollX,
             }}
           >
-            {statusOptions.map((s) => (
+            {statusOptions
+              .filter((status) => {
+                const page = pages.find((item) => item.id === openStatusMenu.pageId);
+                return canManageAllPageStatuses(page?.accessRole) || status.value === 'DRAFT' || status.value === 'PUBLISHED';
+              })
+              .map((s) => (
               <button
                 key={s.value}
                 onClick={() => {

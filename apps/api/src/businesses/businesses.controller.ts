@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Post,
   Get,
@@ -13,116 +13,97 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nes
 import { BusinessesService } from './businesses.service.js';
 import { CreateBusinessDto } from './dto/create-business.dto.js';
 import { UpdateBusinessDto } from './dto/update-business.dto.js';
+import { CreateBusinessMembershipDto } from './dto/create-business-membership.dto.js';
+import { UpdateBusinessMembershipDto } from './dto/update-business-membership.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
-/**
- * BusinessesController - Endpoints CRUD de negocios.
- *
- * Principios SOLID aplicados:
- * - SRP: Solo maneja las peticiones HTTP de Businesses.
- * - DIP: Depende de BusinessesService inyectado.
- *
- * Todos los endpoints requieren autenticación JWT.
- *
- * Endpoints:
- * - POST /businesses - Crear negocio
- * - GET /businesses - Listar negocios del owner
- * - GET /businesses/:id - Obtener negocio
- * - PATCH /businesses/:id - Actualizar negocio
- * - DELETE /businesses/:id - Eliminar negocio
- */
 @ApiTags('Businesses')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('businesses')
 export class BusinessesController {
-  /**
-   * Constructor que inyecta el servicio de negocios.
-   *
-   * @param businessesService - Servicio que maneja la lógica de negocios
-   */
   constructor(private readonly businessesService: BusinessesService) {}
 
-  /**
-   * Crea un nuevo negocio para el usuario autenticado.
-   *
-   * @param dto - Datos del negocio a crear
-   * @param request - Request con el usuario autenticado
-   * @returns Negocio creado
-   */
   @Post()
-  @ApiOperation({ summary: 'Crear un nuevo negocio', description: 'Crea un negocio para el usuario autenticado. El slug se genera automáticamente.' })
+  @ApiOperation({ summary: 'Crear un nuevo negocio' })
   @ApiBody({ type: CreateBusinessDto })
   @ApiResponse({ status: 201, description: 'Negocio creado exitosamente' })
-  @ApiResponse({ status: 400, description: 'Datos inválidos' })
   async create(@Body() dto: CreateBusinessDto, @Request() request: any) {
-    return this.businessesService.create(request.user.userId, dto);
+    return this.businessesService.create(request.user, dto);
   }
 
-  /**
-   * Lista todos los negocios del usuario autenticado.
-   *
-   * @param request - Request con el usuario autenticado
-   * @returns Array de negocios
-   */
   @Get()
-  @ApiOperation({ summary: 'Listar negocios del usuario', description: 'Retorna todos los negocios del usuario autenticado' })
-  @ApiResponse({ status: 200, description: 'Lista de negocios' })
+  @ApiOperation({ summary: 'Listar negocios accesibles al usuario' })
+  @ApiResponse({ status: 200, description: 'Lista de negocios con nivel de acceso' })
   async findAll(@Request() request: any) {
-    return this.businessesService.findAll(request.user.userId);
+    return this.businessesService.findAll(request.user);
   }
 
-  /**
-   * Obtiene un negocio por ID.
-   *
-   * @param id - ID del negocio
-   * @param request - Request con el usuario autenticado
-   * @returns Negocio si existe y pertenece al owner
-   */
   @Get(':id')
-  @ApiOperation({ summary: 'Obtener negocio por ID', description: 'Retorna un negocio si pertenece al usuario autenticado' })
+  @ApiOperation({ summary: 'Obtener un negocio accesible al usuario' })
   @ApiResponse({ status: 200, description: 'Negocio encontrado' })
-  @ApiResponse({ status: 404, description: 'Negocio no encontrado' })
   @ApiResponse({ status: 403, description: 'No autorizado' })
   async findOne(@Param('id') id: string, @Request() request: any) {
-    return this.businessesService.findOne(id, request.user.userId);
+    return this.businessesService.findOne(id, request.user);
   }
 
-  /**
-   * Actualiza un negocio por ID.
-   *
-   * @param id - ID del negocio
-   * @param dto - Datos a actualizar
-   * @param request - Request con el usuario autenticado
-   * @returns Negocio actualizado
-   */
   @Patch(':id')
-  @ApiOperation({ summary: 'Actualizar negocio', description: 'Actualiza parcialmente un negocio del usuario autenticado' })
+  @ApiOperation({ summary: 'Actualizar un negocio' })
   @ApiBody({ type: UpdateBusinessDto })
   @ApiResponse({ status: 200, description: 'Negocio actualizado' })
-  @ApiResponse({ status: 404, description: 'Negocio no encontrado' })
   @ApiResponse({ status: 403, description: 'No autorizado' })
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateBusinessDto,
-    @Request() request: any,
-  ) {
-    return this.businessesService.update(id, request.user.userId, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateBusinessDto, @Request() request: any) {
+    return this.businessesService.update(id, request.user, dto);
   }
 
-  /**
-   * Elimina un negocio por ID.
-   *
-   * @param id - ID del negocio
-   * @param request - Request con el usuario autenticado
-   */
   @Delete(':id')
-  @ApiOperation({ summary: 'Eliminar negocio', description: 'Elimina un negocio y todos sus recursos asociados' })
+  @ApiOperation({ summary: 'Eliminar un negocio (propietario o administrador global)' })
   @ApiResponse({ status: 200, description: 'Negocio eliminado' })
-  @ApiResponse({ status: 404, description: 'Negocio no encontrado' })
   @ApiResponse({ status: 403, description: 'No autorizado' })
   async remove(@Param('id') id: string, @Request() request: any) {
-    await this.businessesService.remove(id, request.user.userId);
+    await this.businessesService.remove(id, request.user);
     return { message: 'Negocio eliminado correctamente' };
   }
+
+  @Get(':id/members')
+  @ApiOperation({ summary: 'Listar miembros del negocio' })
+  @ApiResponse({ status: 200, description: 'Lista de miembros sin datos sensibles' })
+  @ApiResponse({ status: 403, description: 'Solo el propietario o un administrador global puede administrar miembros' })
+  async findMembers(@Param('id') id: string, @Request() request: any) {
+    return this.businessesService.findMembers(id, request.user);
+  }
+
+  @Post(':id/members')
+  @ApiOperation({ summary: 'Añadir miembro por email' })
+  @ApiBody({ type: CreateBusinessMembershipDto })
+  @ApiResponse({ status: 201, description: 'Miembro añadido' })
+  @ApiResponse({ status: 404, description: 'Cuenta no encontrada' })
+  @ApiResponse({ status: 409, description: 'La cuenta ya pertenece a un negocio' })
+  async addMember(@Param('id') id: string, @Body() dto: CreateBusinessMembershipDto, @Request() request: any) {
+    return this.businessesService.addMember(id, request.user, dto);
+  }
+
+  @Patch(':id/members/:userId')
+  @ApiOperation({ summary: 'Cambiar rol de miembro' })
+  @ApiBody({ type: UpdateBusinessMembershipDto })
+  @ApiResponse({ status: 200, description: 'Rol actualizado' })
+  @ApiResponse({ status: 404, description: 'Miembro no encontrado' })
+  async updateMemberRole(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateBusinessMembershipDto,
+    @Request() request: any,
+  ) {
+    return this.businessesService.updateMemberRole(id, userId, request.user, dto);
+  }
+
+  @Delete(':id/members/:userId')
+  @ApiOperation({ summary: 'Retirar miembro' })
+  @ApiResponse({ status: 200, description: 'Miembro retirado' })
+  @ApiResponse({ status: 404, description: 'Miembro no encontrado' })
+  async removeMember(@Param('id') id: string, @Param('userId') userId: string, @Request() request: any) {
+    await this.businessesService.removeMember(id, userId, request.user);
+    return { message: 'Miembro retirado correctamente' };
+  }
 }
+

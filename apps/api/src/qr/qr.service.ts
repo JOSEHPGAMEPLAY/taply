@@ -1,6 +1,7 @@
 ﻿import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
+import { AccessControlService, AuthenticatedUser } from '../authorization/access-control.service.js';
 import * as QRCode from 'qrcode';
 
 /**
@@ -18,7 +19,8 @@ export class QrService {
   private readonly publicBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   constructor(
-    @Inject(PRISMA_CLIENT) private prisma: PrismaClient,
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    private readonly accessControl: AccessControlService,
   ) {}
 
   /**
@@ -28,18 +30,17 @@ export class QrService {
    * @param pageId - ID de la página
    * @returns QR code con dataUrl y pageId
    */
-  async generateQr(pageId: string) {
+  async generateQr(pageId: string, user: AuthenticatedUser) {
     // Verificar que la página existe
     const page = await this.prisma.page.findUnique({
       where: { id: pageId },
-      include: {
-        business: true,
-      },
+      select: { id: true, slug: true, businessId: true },
     });
 
     if (!page) {
       throw new NotFoundException('Página no encontrada');
     }
+    await this.accessControl.requireBusinessRole(page.businessId, user, ['OWNER', 'ADMIN']);
 
     // Construir la URL pública de la página
     const publicUrl = `${this.publicBaseUrl}/p/${page.slug}`;
@@ -79,16 +80,21 @@ export class QrService {
    * @param pageId - ID de la página
    * @returns QR code con dataUrl y pageId
    */
-  async getQrByPageId(pageId: string) {
+  async getQrByPageId(pageId: string, user: AuthenticatedUser) {
+    const page = await this.prisma.page.findUnique({
+      where: { id: pageId },
+      select: {
+        id: true,
+        slug: true,
+        businessId: true,
+        business: { select: { name: true } },
+      },
+    });
+    if (!page) throw new NotFoundException('Página no encontrada');
+    await this.accessControl.requireBusinessRole(page.businessId, user, ['OWNER', 'ADMIN', 'VIEWER']);
+
     const qr = await this.prisma.qrCode.findUnique({
       where: { pageId },
-      include: {
-        page: {
-          include: {
-            business: true,
-          },
-        },
-      },
     });
 
     if (!qr) {
@@ -99,10 +105,10 @@ export class QrService {
       id: qr.id,
       pageId: qr.pageId,
       dataUrl: qr.dataUrl,
-      publicUrl: `${this.publicBaseUrl}/p/${qr.page.slug}`,
+      publicUrl: `${this.publicBaseUrl}/p/${page.slug}`,
       page: {
-        slug: qr.page.slug,
-        businessName: qr.page.business.name,
+        slug: page.slug,
+        businessName: page.business.name,
       },
       createdAt: qr.createdAt,
     };

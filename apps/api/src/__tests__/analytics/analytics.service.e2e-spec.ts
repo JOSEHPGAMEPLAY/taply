@@ -11,7 +11,7 @@ describe('AnalyticsService.getStats', () => {
   const pageId = 'page-1';
   let prisma: {
     page: {
-      findFirst: ReturnType<typeof vi.fn>;
+      findUnique: ReturnType<typeof vi.fn>;
     };
     analyticsEvent: {
       count: ReturnType<typeof vi.fn>;
@@ -20,12 +20,16 @@ describe('AnalyticsService.getStats', () => {
     };
     $queryRaw: ReturnType<typeof vi.fn>;
   };
+  let accessControl: {
+    requireBusinessRole: ReturnType<typeof vi.fn>;
+    assertGlobalAdmin: ReturnType<typeof vi.fn>;
+  };
   let service: AnalyticsService;
 
   beforeEach(() => {
     prisma = {
       page: {
-        findFirst: vi.fn().mockResolvedValue({ id: pageId }),
+        findUnique: vi.fn().mockResolvedValue({ businessId: 'business-1' }),
       },
       analyticsEvent: {
         count: vi.fn(),
@@ -34,7 +38,11 @@ describe('AnalyticsService.getStats', () => {
       },
       $queryRaw: vi.fn(),
     };
-    service = new AnalyticsService(prisma as unknown as PrismaClient);
+    accessControl = {
+      requireBusinessRole: vi.fn().mockResolvedValue('OWNER'),
+      assertGlobalAdmin: vi.fn(),
+    };
+    service = new AnalyticsService(prisma as unknown as PrismaClient, accessControl as any);
   });
 
   afterEach(() => {
@@ -63,7 +71,8 @@ describe('AnalyticsService.getStats', () => {
       startDate: '2025-01-10T00:00:00.000Z',
       endDate: '2025-01-12T00:00:00.000Z',
     });
-    const stats = await service.getStats(dto, 'user-1');
+    const user = { userId: 'user-1', role: 'USER' };
+    const stats = await service.getStats(dto, user);
     const expectedWhere = {
       pageId,
       createdAt: {
@@ -89,10 +98,13 @@ describe('AnalyticsService.getStats', () => {
       byType: { PAGE_VIEW: 3, BUTTON_CLICK: 2, TAG_SCAN: 1 },
     });
     expect(prisma.analyticsEvent.count).toHaveBeenCalledWith({ where: expectedWhere });
-    expect(prisma.page.findFirst).toHaveBeenCalledWith({
-      where: { id: pageId, business: { is: { ownerId: 'user-1' } } },
-      select: { id: true },
+    expect(prisma.page.findUnique).toHaveBeenCalledWith({
+      where: { id: pageId },
+      select: { businessId: true },
     });
+    expect(accessControl.requireBusinessRole).toHaveBeenCalledWith(
+      'business-1', user, ['OWNER', 'ADMIN', 'ANALYST'],
+    );
     expect(prisma.analyticsEvent.groupBy).toHaveBeenNthCalledWith(1, {
       by: ['type'],
       where: expectedWhere,
@@ -131,7 +143,7 @@ describe('AnalyticsService.getStats', () => {
     prisma.$queryRaw.mockResolvedValue([]);
 
     const dto = Object.assign(new AnalyticsQueryDto(), { pageId, rangeDays: 7 });
-    const stats = await service.getStats(dto, 'user-1');
+    const stats = await service.getStats(dto, { userId: 'user-1', role: 'USER' });
 
     expect(stats).toEqual({
       pageId,
@@ -162,7 +174,7 @@ describe('AnalyticsService.getStats', () => {
       endDate: '2025-01-01T00:00:00.000Z',
     });
 
-    await expect(service.getStats(dto, 'user-1')).rejects.toThrow(
+    await expect(service.getStats(dto, { userId: 'user-1', role: 'USER' })).rejects.toThrow(
       `El rango de analíticas no puede superar ${MAX_ANALYTICS_RANGE_DAYS} días`,
     );
     expect(prisma.analyticsEvent.count).not.toHaveBeenCalled();
@@ -190,7 +202,7 @@ describe('AnalyticsService.getStats', () => {
       },
     ]);
 
-    const csv = await service.exportCsv(dto, 'user-1');
+    const csv = await service.exportCsv(dto, { userId: 'user-1', role: 'USER' });
 
     expect(csv).toBe(
       '\uFEFF"fecha","tipo","boton","tagId"\r\n"2025-01-11T12:30:00.000Z","BUTTON_CLICK","\'=SUM(1,1)",""\r\n"2025-01-12T12:30:00.000Z","BUTTON_CLICK","\'\n=SUM(2,2)",""',
@@ -210,9 +222,18 @@ describe('AnalyticsService.getStats', () => {
 
   it('should not export events when the page belongs to another user', async () => {
     const dto = Object.assign(new AnalyticsQueryDto(), { pageId });
-    prisma.page.findFirst.mockResolvedValue(null);
+    prisma.page.findUnique.mockResolvedValue(null);
 
-    await expect(service.exportCsv(dto, 'another-user')).rejects.toThrow('Página no encontrada');
+    await expect(service.exportCsv(dto, { userId: 'another-user', role: 'USER' })).rejects.toThrow('Página no encontrada');
     expect(prisma.analyticsEvent.findMany).not.toHaveBeenCalled();
+  });
+
+  it('does not query events when the business role is not allowed to view analytics', async () => {
+    const { ForbiddenException } = await import('@nestjs/common');
+    accessControl.requireBusinessRole.mockRejectedValue(new ForbiddenException());
+    const dto = Object.assign(new AnalyticsQueryDto(), { pageId });
+
+    await expect(service.getStats(dto, { userId: 'viewer-1', role: 'USER' })).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.analyticsEvent.count).not.toHaveBeenCalled();
   });
 });

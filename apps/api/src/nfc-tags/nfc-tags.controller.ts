@@ -34,8 +34,8 @@ export class NfcTagsController {
   @ApiBody({ type: CreateNfcTagDto })
   @ApiResponse({ status: 201, description: 'Etiqueta creada exitosamente' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async create(@Body() dto: CreateNfcTagDto, @Query('businessId') businessId: string) {
-    return this.nfcTagsService.create(businessId, dto);
+  async create(@Body() dto: CreateNfcTagDto, @Query('businessId') businessId: string, @Request() request: any) {
+    return this.nfcTagsService.create(businessId, dto, request.user);
   }
 
   @Get()
@@ -43,7 +43,7 @@ export class NfcTagsController {
   @ApiQuery({ name: 'businessId', required: false, type: String, description: 'ID del negocio (opcional)' })
   @ApiResponse({ status: 200, description: 'Lista de etiquetas' })
   async findAll(@Request() request: any, @Query('businessId') businessId: string) {
-    return this.nfcTagsService.findAll(businessId || '', request.user?.userId);
+    return this.nfcTagsService.findAll(businessId || '', request.user);
   }
 
   @Get(':id')
@@ -51,8 +51,8 @@ export class NfcTagsController {
   @ApiQuery({ name: 'businessId', required: true, type: String, description: 'ID del negocio' })
   @ApiResponse({ status: 200, description: 'Etiqueta encontrada' })
   @ApiResponse({ status: 404, description: 'Etiqueta no encontrada' })
-  async findOne(@Param('id') id: string, @Query('businessId') businessId: string) {
-    return this.nfcTagsService.findOne(businessId, id);
+  async findOne(@Param('id') id: string, @Query('businessId') businessId: string, @Request() request: any) {
+    return this.nfcTagsService.findOne(businessId, id, request.user);
   }
 
   @Delete(':id')
@@ -61,8 +61,8 @@ export class NfcTagsController {
   @ApiResponse({ status: 200, description: 'Etiqueta eliminada' })
   @ApiResponse({ status: 403, description: 'No autorizado' })
   @ApiResponse({ status: 404, description: 'Etiqueta no encontrada' })
-  async remove(@Param('id') id: string, @Query('businessId') businessId: string) {
-    return this.nfcTagsService.remove(businessId, id);
+  async remove(@Param('id') id: string, @Query('businessId') businessId: string, @Request() request: any) {
+    return this.nfcTagsService.remove(businessId, id, request.user);
   }
 
   @Post(':id/assign')
@@ -71,8 +71,13 @@ export class NfcTagsController {
   @ApiBody({ type: AssignTagDto })
   @ApiResponse({ status: 200, description: 'Etiqueta asignada exitosamente' })
   @ApiResponse({ status: 404, description: 'Etiqueta o página no encontrada' })
-  async assign(@Param('id') id: string, @Body() dto: AssignTagDto, @Query('businessId') businessId: string) {
-    return this.nfcTagsService.assign(businessId, id, dto);
+  async assign(
+    @Param('id') id: string,
+    @Body() dto: AssignTagDto,
+    @Query('businessId') businessId: string,
+    @Request() request: any,
+  ) {
+    return this.nfcTagsService.assign(businessId, id, dto, request.user);
   }
 
   @Post(':id/unassign')
@@ -82,15 +87,15 @@ export class NfcTagsController {
   @ApiResponse({ status: 400, description: 'La etiqueta no tiene una asignación activa' })
   @ApiResponse({ status: 403, description: 'No autorizado' })
   @ApiResponse({ status: 404, description: 'Etiqueta no encontrada' })
-  async unassign(@Param('id') id: string, @Query('businessId') businessId: string) {
-    return this.nfcTagsService.unassign(businessId, id);
+  async unassign(@Param('id') id: string, @Query('businessId') businessId: string, @Request() request: any) {
+    return this.nfcTagsService.unassign(businessId, id, request.user);
   }
 
   @Post(':id/scan')
   @ApiOperation({ summary: 'Registrar escaneo de etiqueta', description: 'Registra un evento de escaneo para la etiqueta.' })
   @ApiResponse({ status: 200, description: 'Escaneo registrado' })
   @ApiResponse({ status: 404, description: 'Etiqueta no encontrada' })
-  async scan(@Param('id') id: string) {
-    return this.nfcTagsService.scan(id);
+  async scan(@Param('id') id: string, @Request() request: any) {
+    return this.nfcTagsService.scan(id, request.user);
   }
 }

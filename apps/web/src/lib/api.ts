@@ -82,6 +82,17 @@ export interface DashboardSummary {
   nfcTags: number;
 }
 
+export type BusinessAccessRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'ANALYST' | 'VIEWER' | 'GLOBAL_ADMIN';
+export type BusinessMemberRole = 'ADMIN' | 'EDITOR' | 'ANALYST' | 'VIEWER';
+
+export interface BusinessMember {
+  id: string;
+  userId: string;
+  role: BusinessMemberRole;
+  createdAt: string;
+  user: { name: string; email: string };
+}
+
 /**
  * API client con métodos para cada módulo.
  * Cada método sigue el contrato exacto definido en Swagger/OpenAPI.
@@ -162,10 +173,18 @@ export const api = {
 
   /**
    * GET /businesses (requiere JWT)
-   * Response: Array de negocios del usuario
+   * Response: Array de negocios del usuario con su acceso y propietario
    */
   async getBusinesses() {
-    return apiRequest<Array<{ id: string; name: string; slug: string; status: string; createdAt: string }>>('GET', '/businesses');
+    return apiRequest<Array<{
+      id: string;
+      name: string;
+      slug: string;
+      status: string;
+      ownerId: string;
+      accessRole: BusinessAccessRole;
+      createdAt: string;
+    }>>('GET', '/businesses');
   },
 
   /**
@@ -195,6 +214,43 @@ export const api = {
    */
   async deleteBusiness(id: string) {
     return apiRequest<{ message: string }>('DELETE', `/businesses/${id}`);
+  },
+
+  /**
+   * GET /businesses/:id/members (requiere JWT)
+   */
+  async getBusinessMembers(id: string) {
+    return apiRequest<BusinessMember[]>('GET', `/businesses/${encodeURIComponent(id)}/members`);
+  },
+
+  /**
+   * POST /businesses/:id/members (requiere JWT)
+   * Body: { email: string, role: BusinessMemberRole }
+   */
+  async addBusinessMember(id: string, data: { email: string; role: BusinessMemberRole }) {
+    return apiRequest<BusinessMember>('POST', `/businesses/${encodeURIComponent(id)}/members`, data);
+  },
+
+  /**
+   * PATCH /businesses/:id/members/:userId (requiere JWT)
+   * Body: { role: BusinessMemberRole }
+   */
+  async updateBusinessMemberRole(id: string, userId: string, role: BusinessMemberRole) {
+    return apiRequest<BusinessMember>(
+      'PATCH',
+      `/businesses/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`,
+      { role }
+    );
+  },
+
+  /**
+   * DELETE /businesses/:id/members/:userId (requiere JWT)
+   */
+  async removeBusinessMember(id: string, userId: string) {
+    return apiRequest<{ message: string }>(
+      'DELETE',
+      `/businesses/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`
+    );
   },
 
   // ==========================================
@@ -243,7 +299,7 @@ export const api = {
    * Body: { slug?: string, templateId?: string, buttons?: Array<...> }
    * Response: Página actualizada
    */
-  async updatePage(id: string, businessId: string, data: { slug?: string; templateId?: string; buttons?: Array<{ key: string; label: string; url: string; icon?: string }> }) {
+  async updatePage(id: string, businessId: string, data: { slug?: string; templateId?: string | null; buttons?: Array<{ key: string; label: string; url: string; icon?: string }> }) {
     return apiRequest<{ id: string; slug: string; status: string; businessId: string; templateId?: string; publishedVersionId: string | null; createdAt: string; updatedAt: string }>(
       'PATCH',
       `/pages/${id}?businessId=${businessId}`,

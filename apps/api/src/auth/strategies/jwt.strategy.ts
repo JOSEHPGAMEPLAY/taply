@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { PrismaClient } from '@prisma/client';
+import { PRISMA_CLIENT } from '../../prisma/prisma.module.js';
 
 /**
  * JwtStrategy - Estrategia de Passport para validar tokens JWT.
@@ -22,7 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * - jwtFromRequest: Extrae el token del header Authorization
    * - secretOrKey: Secreto usado para verificar la firma del token
    */
-  constructor() {
+  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: process.env.JWT_SECRET || 'taply-jwt-secret-change-in-production',
@@ -39,10 +41,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * @returns Objeto con los datos del usuario autenticado
    */
   async validate(payload: any) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, email: true, role: true, status: true },
+    });
+    if (!user || user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('La cuenta no está disponible');
+    }
+
     return {
-      userId: payload.sub,
-      email: payload.email,
-      role: payload.role,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
     };
   }
 }

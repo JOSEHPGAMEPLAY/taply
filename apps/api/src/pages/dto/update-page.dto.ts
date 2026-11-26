@@ -38,7 +38,7 @@ export class UpdatePageDto {
 
   @IsOptional()
   @IsString()
-  templateId?: string;
+  templateId?: string | null;
 
   @IsOptional()
   @IsArray()

@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { TemplatesService } from './templates.service.js';
@@ -53,24 +54,24 @@ export class TemplatesController {
   @ApiOperation({ summary: 'Crear un nuevo template' })
   @ApiResponse({ status: 201, description: 'Template creado' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async create(@Body() dto: CreateTemplateDto) {
-    return this.templatesService.create(dto);
+  async create(@Body() dto: CreateTemplateDto, @Request() request: any) {
+    return this.templatesService.create(dto, request.user);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar template' })
   @ApiResponse({ status: 200, description: 'Template actualizado' })
   @ApiResponse({ status: 404, description: 'Template no encontrado' })
-  async update(@Param('id') id: string, @Body() dto: UpdateTemplateDto) {
-    return this.templatesService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateTemplateDto, @Request() request: any) {
+    return this.templatesService.update(id, dto, request.user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Eliminar template' })
   @ApiResponse({ status: 200, description: 'Template eliminado' })
   @ApiResponse({ status: 404, description: 'Template no encontrado' })
-  async remove(@Param('id') id: string) {
-    await this.templatesService.remove(id);
+  async remove(@Param('id') id: string, @Request() request: any) {
+    await this.templatesService.remove(id, request.user);
     return { message: 'Template eliminado correctamente' };
   }
 }

@@ -17,7 +17,7 @@ import {
   MoveUp,
   MoveDown,
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, type BusinessAccessRole } from '@/lib/api';
 import IconSelector from '@/components/icon-selector';
 import { getIconByKey } from '@/lib/icon-map';
 import { Modal } from '@/components/ui/modal';
@@ -52,6 +52,7 @@ export default function ButtonsPage({ params }: { params: Promise<{ pageId: stri
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState<PageData | null>(null);
+  const [canEditPage, setCanEditPage] = useState<boolean | null>(null);
   const [buttons, setButtons] = useState<PageButton[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +73,7 @@ export default function ButtonsPage({ params }: { params: Promise<{ pageId: stri
   const loadPage = useCallback(async () => {
     try {
       setLoading(true);
+      setCanEditPage(null);
       const { pageId } = await params;
       const businessId = searchParams.get('businessId') || '';
       if (!businessId) {
@@ -79,8 +81,11 @@ export default function ButtonsPage({ params }: { params: Promise<{ pageId: stri
         setLoading(false);
         return;
       }
-      const pageData = await api.getPage(pageId, businessId);
+      const [pageData, businesses] = await Promise.all([api.getPage(pageId, businessId), api.getBusinesses()]);
       const p = pageData as any;
+      const business = businesses.find((item) => item.id === businessId);
+      const role = business?.accessRole as BusinessAccessRole | undefined;
+      setCanEditPage(role === 'OWNER' || role === 'ADMIN' || role === 'EDITOR' || role === 'GLOBAL_ADMIN');
 
       setPage({
         id: p?.id || pageId,
@@ -199,6 +204,22 @@ export default function ButtonsPage({ params }: { params: Promise<{ pageId: stri
 
   // Validación del formulario
   const isFormValid = formButton.key.trim() && formButton.label.trim() && formButton.url.trim();
+
+  if (!loading && page && canEditPage === false) {
+    return (
+      <div className="space-y-4 rounded-xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+        <h1 className="text-xl font-semibold text-gray-900">No tienes permiso para editar esta página</h1>
+        <p className="text-sm text-gray-500">Tu rol permite consultar la página, pero no gestionar sus botones.</p>
+        <button
+          onClick={() => router.push('/app/pages')}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Volver a páginas
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

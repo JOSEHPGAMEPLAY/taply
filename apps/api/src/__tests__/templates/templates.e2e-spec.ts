@@ -48,8 +48,8 @@ describe('Templates (E2E)', () => {
   });
 
   describe('POST /templates', () => {
-    it('debe crear un template exitosamente', async () => {
-      const res = await request(app.getHttpServer())
+    it('debe rechazar la creación a usuarios que no son administradores globales', async () => {
+      await request(app.getHttpServer())
         .post(baseUrl)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
@@ -59,11 +59,7 @@ describe('Templates (E2E)', () => {
             buttonStyle: 'rounded',
           },
         })
-        .expect(201);
-
-      expect(res.body).toHaveProperty('id');
-      expect(res.body.name).toBe('Template de Prueba');
-      templateId = res.body.id;
+        .expect(403);
     });
 
     it('debe fallar sin autenticación (401)', async () => {
@@ -88,6 +84,12 @@ describe('Templates (E2E)', () => {
 
   describe('GET /templates/:id', () => {
     it('debe obtener un template por ID', async () => {
+      const templates = await request(app.getHttpServer())
+        .get(baseUrl)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+      templateId = templates.body[0].id;
+
       const res = await request(app.getHttpServer())
         .get(`${baseUrl}/${templateId}`)
         .set('Authorization', `Bearer ${accessToken}`)
@@ -105,33 +107,23 @@ describe('Templates (E2E)', () => {
   });
 
   describe('PATCH /templates/:id', () => {
-    it('debe actualizar un template', async () => {
-      const res = await request(app.getHttpServer())
-        .patch(`${baseUrl}/${templateId}`)
+    it('debe rechazar la edición a usuarios que no son administradores globales', async () => {
+      await request(app.getHttpServer())
+        .patch(`${baseUrl}/00000000-0000-0000-0000-000000000000`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
           name: 'Template Actualizado',
         })
-        .expect(200);
-
-      expect(res.body.name).toBe('Template Actualizado');
+        .expect(403);
     });
   });
 
   describe('DELETE /templates/:id', () => {
-    it('debe eliminar un template', async () => {
-      const createRes = await request(app.getHttpServer())
-        .post(baseUrl)
+    it('debe rechazar el borrado a usuarios que no son administradores globales', async () => {
+      await request(app.getHttpServer())
+        .delete('/api/v1/templates/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send({ name: 'Template a Eliminar' })
-        .expect(201);
-
-      const deleteRes = await request(app.getHttpServer())
-        .delete(`${baseUrl}/${createRes.body.id}`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .expect(200);
-
-      expect(deleteRes.body).toHaveProperty('message');
+        .expect(403);
     });
   });
 });

@@ -22,10 +22,6 @@ export const PRISMA_CLIENT = 'PrismaClient';
     {
       provide: PRISMA_CLIENT,
       useFactory: () => {
-        // PrismaPg adapter no soporta SSL; usar solo con DB locales
-        if (process.env.DATABASE_URL?.includes('sslmode=require')) {
-          return new PrismaClient();
-        }
         const adapter = new PrismaPg(process.env.DATABASE_URL!);
         return new PrismaClient({ adapter });
       },

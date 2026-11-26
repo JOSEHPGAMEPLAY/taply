@@ -17,6 +17,7 @@ import {
   Monitor,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Modal } from '@/components/ui/modal';
@@ -62,6 +63,8 @@ const buttonStyles = [
  * Permite crear templates con personalización completa: colores, formas, logo, fondo.
  */
 export default function TemplatesPage() {
+  const { user } = useAuth();
+  const canManageTemplates = user?.role === 'ADMIN';
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -207,10 +210,12 @@ export default function TemplatesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Templates</h1>
           <p className="text-sm text-gray-500 mt-1">Diseña templates personalizados para tus páginas digitales</p>
         </div>
-        <Button onClick={openCreateModal}>
-          <Plus className="w-4 h-4" />
-          Nuevo template
-        </Button>
+        {canManageTemplates && (
+          <Button onClick={openCreateModal}>
+            <Plus className="w-4 h-4" />
+            Nuevo template
+          </Button>
+        )}
       </div>
 
       {/* Alerts */}
@@ -227,7 +232,7 @@ export default function TemplatesPage() {
           icon={<LayoutTemplate className="w-12 h-12" />}
           title="No tienes templates aún"
           description="Crea templates para personalizar el diseño de tus páginas digitales con colores, formas y logo."
-          action={{ label: 'Crear primer template', onClick: openCreateModal }}
+          action={canManageTemplates ? { label: 'Crear primer template', onClick: openCreateModal } : undefined}
         />
       )}
 
@@ -299,20 +304,24 @@ export default function TemplatesPage() {
                       >
                         <Eye className="w-4 h-4" />
                       </a>
-                      <button
-                        onClick={() => openEditModal(template)}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
-                        title="Editar"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(template)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canManageTemplates && (
+                        <>
+                          <button
+                            onClick={() => openEditModal(template)}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+                            title="Editar"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(template)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -324,7 +333,7 @@ export default function TemplatesPage() {
 
       {/* Create/Edit Modal */}
       <Modal
-        isOpen={showModal}
+        isOpen={showModal && canManageTemplates}
         onClose={() => setShowModal(false)}
         title={editingTemplate ? 'Editar template' : 'Nuevo template'}
         description="Personaliza el diseño de tu página digital"

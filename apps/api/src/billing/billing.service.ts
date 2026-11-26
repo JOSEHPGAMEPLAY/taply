@@ -3,15 +3,20 @@ import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
+import { AccessControlService, AuthenticatedUser } from '../authorization/access-control.service.js';
 
 /**
  * BillingService - Gestiona productos y órdenes de facturación.
  */
 @Injectable()
 export class BillingService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    private readonly accessControl: AccessControlService,
+  ) {}
 
-  async createProduct(dto: CreateProductDto) {
+  async createProduct(dto: CreateProductDto, user: AuthenticatedUser) {
+    this.accessControl.assertGlobalAdmin(user);
     return this.prisma.billingProduct.create({
       data: {
         name: dto.name,
@@ -30,11 +35,8 @@ export class BillingService {
     });
   }
 
-  async createOrder(dto: CreateOrderDto) {
-    const business = await this.prisma.business.findUnique({
-      where: { id: dto.businessId },
-    });
-    if (!business) throw new NotFoundException('Negocio no encontrado');
+  async createOrder(dto: CreateOrderDto, user: AuthenticatedUser) {
+    await this.accessControl.requireBusinessRole(dto.businessId, user, ['OWNER']);
 
     let subtotal = 0;
     const items = await Promise.all(

@@ -29,8 +29,8 @@ export class QrController {
   @ApiOperation({ summary: 'Generar código QR para una página' })
   @ApiResponse({ status: 201, description: 'Código QR generado exitosamente' })
   @ApiResponse({ status: 404, description: 'Página no encontrada' })
-  async generateQr(@Body() dto: GenerateQrDto) {
-    return this.qrService.generateQr(dto.pageId);
+  async generateQr(@Body() dto: GenerateQrDto, @Request() request: any) {
+    return this.qrService.generateQr(dto.pageId, request.user);
   }
 
   /**
@@ -41,7 +41,7 @@ export class QrController {
   @ApiOperation({ summary: 'Obtener código QR de una página' })
   @ApiResponse({ status: 200, description: 'Código QR encontrado' })
   @ApiResponse({ status: 404, description: 'Código QR no encontrado' })
-  async getQr(@Param('pageId') pageId: string) {
-    return this.qrService.getQrByPageId(pageId);
+  async getQr(@Param('pageId') pageId: string, @Request() request: any) {
+    return this.qrService.getQrByPageId(pageId, request.user);
   }
 }

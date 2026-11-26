@@ -60,9 +60,19 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
 
   // Template configuration
   const template = pageConfig.template || {};
-  const bgColor = template.bgColor || '#0f172a';
-  const bgGradient = template.bgGradient || 'from-gray-900 via-slate-900 to-gray-900';
-  const primaryColor = template.primaryColor || '#3b82f6';
+  const bgColor = typeof template.bgColor === 'string' && /^#[0-9a-f]{6}$/i.test(template.bgColor)
+    ? template.bgColor
+    : '#0f172a';
+  const hasCustomBackgroundColor = bgColor !== '#0f172a' && !template.bgGradient;
+  const bgGradient = template.bgGradient || (hasCustomBackgroundColor ? '' : 'from-gray-900 via-slate-900 to-gray-900');
+  const colorChannels = bgColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  const isLightBackground = Boolean(
+    (colorChannels && (parseInt(colorChannels[1], 16) * 299 + parseInt(colorChannels[2], 16) * 587 + parseInt(colorChannels[3], 16) * 114) / 1000 > 160)
+    || /(?:from|via|to)-(?:gray-50|blue-50|cyan-50|pink-50|rose-50|white)/.test(bgGradient),
+  );
+  const primaryColor = typeof template.primaryColor === 'string' && /^#[0-9a-f]{6}$/i.test(template.primaryColor)
+    ? template.primaryColor
+    : '#3b82f6';
   const buttonStyle = template.buttonStyle || 'rounded'; // rounded, square, pill
   const shapeMap: Record<string, string> = {
     rounded: 'rounded-2xl',
@@ -72,7 +82,10 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
   const buttonShapeClass = shapeMap[buttonStyle] || 'rounded-2xl';
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${bgGradient} relative overflow-hidden`}>
+    <div
+      className={`min-h-screen ${bgGradient ? `bg-gradient-to-br ${bgGradient}` : ''} relative overflow-hidden`}
+      style={{ backgroundColor: bgColor }}
+    >
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
@@ -97,11 +110,11 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
           )}
 
           {/* Business info */}
-          <h1 className="mt-6 text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <h1 className={`mt-6 text-2xl sm:text-3xl font-bold tracking-tight ${isLightBackground ? 'text-gray-900' : 'text-white'}`}>
             {business?.name || slug}
           </h1>
           {business?.description && (
-            <p className="mt-2 text-gray-400 max-w-sm mx-auto text-sm leading-relaxed">
+            <p className={`mt-2 max-w-sm mx-auto text-sm leading-relaxed ${isLightBackground ? 'text-gray-600' : 'text-gray-400'}`}>
               {business.description}
             </p>
           )}
@@ -119,14 +132,16 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
                 pageId={pageId || ''}
                 buttonKey={btn.key}
                 buttonShape={buttonShapeClass}
+                isLightBackground={isLightBackground}
+                primaryColor={primaryColor}
               />
             ))
           ) : (
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-8 text-center">
-              <div className="w-12 h-12 bg-white/5 rounded-xl mx-auto flex items-center justify-center mb-3">
+            <div className={`${isLightBackground ? 'bg-black/5 border-black/10' : 'bg-white/5 border-white/10'} backdrop-blur-sm rounded-2xl border p-8 text-center`}>
+              <div className={`w-12 h-12 ${isLightBackground ? 'bg-black/5' : 'bg-white/5'} rounded-xl mx-auto flex items-center justify-center mb-3`}>
                 <span className="text-2xl">👋</span>
               </div>
-              <p className="text-sm text-gray-400">
+              <p className={`text-sm ${isLightBackground ? 'text-gray-600' : 'text-gray-400'}`}>
                 Este negocio pronto tendrá contenido disponible.
               </p>
             </div>
@@ -135,7 +150,7 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
 
         {/* Powered by */}
         <div className="mt-12 text-center">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs text-gray-500 hover:text-gray-400 transition-colors">
+          <Link href="/" className={`inline-flex items-center gap-2 text-xs transition-colors ${isLightBackground ? 'text-gray-600 hover:text-gray-800' : 'text-gray-500 hover:text-gray-400'}`}>
             <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded flex items-center justify-center">
               <span className="text-white text-[8px] font-bold">T</span>
             </div>

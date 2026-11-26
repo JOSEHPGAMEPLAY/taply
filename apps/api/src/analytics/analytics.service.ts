@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, Logger, NotFoundException } fr
 import { Cron } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
+import { AccessControlService, AuthenticatedUser } from '../authorization/access-control.service.js';
 import {
   AnalyticsQueryDto,
   DEFAULT_ANALYTICS_RANGE_DAYS,
@@ -34,10 +35,13 @@ type AnalyticsAggregationResults = [
  */
 @Injectable()
 export class AnalyticsService {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(
+    @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
+    private readonly accessControl: AccessControlService,
+  ) {}
 
-  async getStats(dto: AnalyticsQueryDto, userId: string) {
-    await this.ensurePageOwnership(dto.pageId, userId);
+  async getStats(dto: AnalyticsQueryDto, user: AuthenticatedUser) {
+    await this.ensurePageAccess(dto.pageId, user);
     const { startDate, endDate } = this.getDateRange(dto);
     const where = {
       pageId: dto.pageId,
@@ -94,8 +98,8 @@ export class AnalyticsService {
     };
   }
 
-  async exportCsv(dto: AnalyticsQueryDto, userId: string): Promise<string> {
-    await this.ensurePageOwnership(dto.pageId, userId);
+  async exportCsv(dto: AnalyticsQueryDto, user: AuthenticatedUser): Promise<string> {
+    await this.ensurePageAccess(dto.pageId, user);
     const { startDate, endDate } = this.getDateRange(dto);
     const events = await this.prisma.analyticsEvent.findMany({
       where: {
@@ -118,12 +122,13 @@ export class AnalyticsService {
     return `\uFEFF${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}`;
   }
 
-  private async ensurePageOwnership(pageId: string, userId: string): Promise<void> {
-    const page = await this.prisma.page.findFirst({
-      where: { id: pageId, business: { is: { ownerId: userId } } },
-      select: { id: true },
+  private async ensurePageAccess(pageId: string, user: AuthenticatedUser): Promise<void> {
+    const page = await this.prisma.page.findUnique({
+      where: { id: pageId },
+      select: { businessId: true },
     });
     if (!page) throw new NotFoundException('Página no encontrada');
+    await this.accessControl.requireBusinessRole(page.businessId, user, ['OWNER', 'ADMIN', 'ANALYST']);
   }
 
   private getDateRange(dto: AnalyticsQueryDto): { startDate: Date; endDate: Date } {
@@ -143,7 +148,12 @@ export class AnalyticsService {
    * Por defecto elimina eventos mayores a 12 meses según la política del plan maestro.
    * Retorna la cantidad de eventos eliminados.
    */
-  async pruneEvents(retentionMonths: number = 12) {
+  async pruneEvents(retentionMonths: number, user: AuthenticatedUser) {
+    this.accessControl.assertGlobalAdmin(user);
+    return this.deletePrunedEvents(retentionMonths);
+  }
+
+  private async deletePrunedEvents(retentionMonths: number) {
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - retentionMonths);
 
@@ -163,7 +173,7 @@ export class AnalyticsService {
     const logger = new Logger('AnalyticsService');
     logger.log('Iniciando pruning automático de eventos antiguos...');
     try {
-      const result = await this.pruneEvents(12);
+      const result = await this.deletePrunedEvents(12);
       logger.log(`Pruning completado: ${result.deleted} eventos eliminados (corte: ${result.cutoffDate})`);
     } catch (error) {
       logger.error('Error al hacer pruning de eventos', error);

@@ -130,7 +130,7 @@ export class AuthService {
 
       // Buscar el usuario asociado al token
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
-      if (!user) {
+      if (!user || user.status !== 'ACTIVE') {
         throw new UnauthorizedException('Token de refresco inválido');
       }
 

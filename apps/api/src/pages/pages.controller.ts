@@ -35,7 +35,7 @@ export class PagesController {
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 403, description: 'No autorizado' })
   async create(@Body() dto: CreatePageDto, @Request() request: any, @Query('businessId') businessId: string) {
-    return this.pagesService.create(businessId, dto);
+    return this.pagesService.create(businessId, dto, request.user);
   }
 
   @Get()
@@ -43,7 +43,7 @@ export class PagesController {
   @ApiQuery({ name: 'businessId', required: false, type: String, description: 'ID del negocio (opcional)' })
   @ApiResponse({ status: 200, description: 'Lista de páginas' })
   async findAll(@Request() request: any, @Query('businessId') businessId: string) {
-    return this.pagesService.findAll(businessId || '', request.user?.userId);
+    return this.pagesService.findAll(businessId || '', request.user);
   }
 
   @Get(':id')
@@ -53,7 +53,7 @@ export class PagesController {
   @ApiResponse({ status: 404, description: 'Página no encontrada' })
   @ApiResponse({ status: 403, description: 'No autorizado' })
   async findOne(@Param('id') id: string, @Request() request: any, @Query('businessId') businessId: string) {
-    return this.pagesService.findOne(businessId, id);
+    return this.pagesService.findOne(businessId, id, request.user);
   }
 
   @Patch(':id')
@@ -64,7 +64,7 @@ export class PagesController {
   @ApiResponse({ status: 404, description: 'Página no encontrada' })
   @ApiResponse({ status: 403, description: 'No autorizado' })
   async update(@Param('id') id: string, @Body() dto: UpdatePageDto, @Request() request: any, @Query('businessId') businessId: string) {
-    return this.pagesService.update(businessId, id, dto);
+    return this.pagesService.update(businessId, id, dto, request.user);
   }
 
   @Delete(':id')
@@ -74,7 +74,7 @@ export class PagesController {
   @ApiResponse({ status: 404, description: 'Página no encontrada' })
   @ApiResponse({ status: 403, description: 'No autorizado' })
   async remove(@Param('id') id: string, @Request() request: any, @Query('businessId') businessId: string) {
-    await this.pagesService.remove(businessId, id);
+    await this.pagesService.remove(businessId, id, request.user);
     return { message: 'Página eliminada' };
   }
 
@@ -85,7 +85,7 @@ export class PagesController {
   @ApiResponse({ status: 404, description: 'Página no encontrada' })
   @ApiResponse({ status: 400, description: 'No hay versión DRAFT para publicar' })
   async publish(@Param('id') id: string, @Request() request: any, @Query('businessId') businessId: string) {
-    return this.pagesService.publish(businessId, id);
+    return this.pagesService.publish(businessId, id, request.user);
   }
 
   @Post(':id/unpublish')
@@ -95,7 +95,7 @@ export class PagesController {
   @ApiResponse({ status: 404, description: 'Página no encontrada' })
   @ApiResponse({ status: 400, description: 'La página no está publicada' })
   async unpublish(@Param('id') id: string, @Request() request: any, @Query('businessId') businessId: string) {
-    return this.pagesService.unpublish(businessId, id);
+    return this.pagesService.unpublish(businessId, id, request.user);
   }
 
   @Patch(':id/status')
@@ -106,15 +106,19 @@ export class PagesController {
   @ApiResponse({ status: 404, description: 'Página no encontrada' })
   @ApiResponse({ status: 400, description: 'Estado inválido' })
   async updateStatus(@Param('id') id: string, @Body('status') status: string, @Request() request: any, @Query('businessId') businessId: string) {
-    return this.pagesService.updateStatus(businessId, id, status);
+    return this.pagesService.updateStatus(businessId, id, status, request.user);
   }
 
   @Get('slug/:slug/check')
   @ApiOperation({ summary: 'Verificar si un slug ya existe', description: 'Retorna si el slug ya está en uso para el negocio dado. Útil para validación en tiempo real antes de crear.' })
   @ApiQuery({ name: 'businessId', required: true, type: String, description: 'ID del negocio' })
   @ApiResponse({ status: 200, description: 'Resultado de la verificación', schema: { type: 'object', properties: { available: { type: 'boolean' } } } })
-  async checkSlug(@Param('slug') slug: string, @Query('businessId') businessId: string) {
-    const available = await this.pagesService.checkSlugAvailable(businessId, slug);
+  async checkSlug(
+    @Param('slug') slug: string,
+    @Query('businessId') businessId: string,
+    @Request() request: any,
+  ) {
+    const available = await this.pagesService.checkSlugAvailable(businessId, slug, request.user);
     return { available };
   }
 }

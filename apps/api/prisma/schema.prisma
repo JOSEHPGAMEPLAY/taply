@@ -26,6 +26,13 @@ enum BusinessStatus {
   CLOSED
 }
 
+enum BusinessMemberRole {
+  ADMIN
+  EDITOR
+  ANALYST
+  VIEWER
+}
+
 enum PageStatus {
   DRAFT
   PUBLISHED
@@ -127,6 +134,7 @@ model User {
   authSessions        AuthSession[]
   authTokens          AuthToken[]
   businesses          Business[]
+  businessMemberships BusinessMembership[]
   auditLogs           AuditLog[]     @relation("AuditLogActor")
   passwordResetTokens PasswordResetToken[]
 
@@ -198,10 +206,27 @@ model Business {
   orders      Order[]
   subscriptions Subscription[]
   entitlements BusinessEntitlement[]
+  memberships   BusinessMembership[]
 
   @@index([ownerId])
   @@index([slug])
   @@map("businesses")
+}
+
+model BusinessMembership {
+  id         String            @id @default(uuid())
+  businessId String
+  userId     String            @unique
+  role       BusinessMemberRole
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  // Relaciones
+  business   Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_memberships")
 }
 
 model Template {
