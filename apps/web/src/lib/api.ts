@@ -4,6 +4,7 @@
  *
  * CONTRATOS DE LA API — Referencia rápida:
  * - Auth: POST /auth/register, POST /auth/login, POST /auth/refresh, GET /auth/me
+ * - Dashboard: GET /dashboard/summary
  * - Businesses: POST /businesses, GET /businesses, GET /businesses/:id, PATCH /businesses/:id, DELETE /businesses/:id
  * - Pages: POST /pages?businessId=X, GET /pages?businessId=X, GET /pages/:id?businessId=X, PATCH /pages/:id?businessId=X, DELETE /pages/:id?businessId=X, POST /pages/:id/publish?businessId=X
  * - NFC Tags: POST /nfc-tags?businessId=X, GET /nfc-tags?businessId=X, GET /nfc-tags/:id?businessId=X, POST /nfc-tags/:id/assign?businessId=X, POST /nfc-tags/:id/scan
@@ -75,6 +76,12 @@ async function apiRequest<T>(
   return response.json();
 }
 
+export interface DashboardSummary {
+  businesses: number;
+  pages: number;
+  nfcTags: number;
+}
+
 /**
  * API client con métodos para cada módulo.
  * Cada método sigue el contrato exacto definido en Swagger/OpenAPI.
@@ -83,6 +90,14 @@ export const api = {
   // ==========================================
   // Auth — Sin businessId, sin query params
   // ==========================================
+
+  /**
+   * GET /dashboard/summary (requiere JWT)
+   * Response: { businesses: number, pages: number, nfcTags: number }
+   */
+  async getDashboardSummary() {
+    return apiRequest<DashboardSummary>('GET', '/dashboard/summary');
+  },
 
   /**
    * POST /auth/register

@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
+import Link from 'next/link';
 import { type ComponentType } from 'react';
 
 export interface NavItem {
@@ -56,6 +57,7 @@ export function DashboardSidebar({
             {/* Close button - mobile only */}
             <button
               onClick={onClose}
+              aria-label="Cerrar menú"
               className="lg:hidden text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -63,15 +65,16 @@ export function DashboardSidebar({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          <nav aria-label="Navegación principal" className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activePath === item.href;
               return (
-                <a
+                <Link
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     isActive
@@ -86,7 +89,7 @@ export function DashboardSidebar({
                       {item.badge}
                     </span>
                   )}
-                </a>
+                </Link>
               );
             })}
           </nav>

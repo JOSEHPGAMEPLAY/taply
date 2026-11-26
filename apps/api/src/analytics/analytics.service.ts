@@ -1,8 +1,27 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
-import { AnalyticsQueryDto } from './dto/analytics-query.dto.js';
+import {
+  AnalyticsQueryDto,
+  DEFAULT_ANALYTICS_RANGE_DAYS,
+  MAX_ANALYTICS_RANGE_DAYS,
+} from './dto/analytics-query.dto.js';
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+type AnalyticsAggregationResults = [
+  total: number,
+  eventTypeCounts: Array<{
+    type: 'PAGE_VIEW' | 'BUTTON_CLICK' | 'TAG_SCAN';
+    _count: { _all: number };
+  }>,
+  dailyViews: Array<{ date: string; count: number }>,
+  buttonClickCounts: Array<{
+    buttonKey: string | null;
+    _count: { _all: number };
+  }>,
+];
 
 /**
  * AnalyticsService - Obtiene estadísticas de analíticas por página.
@@ -12,51 +31,64 @@ export class AnalyticsService {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
 
   async getStats(dto: AnalyticsQueryDto) {
-    const where: any = { pageId: dto.pageId };
-    if (dto.startDate || dto.endDate) {
-      where.createdAt = {};
-      if (dto.startDate) where.createdAt.gte = new Date(dto.startDate);
-      if (dto.endDate) where.createdAt.lte = new Date(dto.endDate);
+    const endDate = dto.endDate ? new Date(dto.endDate) : new Date();
+    const rangeDays = dto.rangeDays ?? DEFAULT_ANALYTICS_RANGE_DAYS;
+    const startDate = dto.startDate
+      ? new Date(dto.startDate)
+      : new Date(endDate.getTime() - rangeDays * MS_PER_DAY);
+    if (startDate > endDate || endDate.getTime() - startDate.getTime() > MAX_ANALYTICS_RANGE_DAYS * MS_PER_DAY) {
+      throw new BadRequestException(`El rango de analíticas no puede superar ${MAX_ANALYTICS_RANGE_DAYS} días`);
     }
+    const where = {
+      pageId: dto.pageId,
+      createdAt: { gte: startDate, lte: endDate },
+    };
 
-    const events = await this.prisma.analyticsEvent.findMany({ where });
+    const [total, eventTypeCounts, dailyViews, buttonClickCounts]: AnalyticsAggregationResults = await Promise.all([
+      this.prisma.analyticsEvent.count({ where }),
+      this.prisma.analyticsEvent.groupBy({
+        by: ['type'],
+        where,
+        _count: { _all: true },
+      }),
+      this.prisma.$queryRaw<{ date: string; count: number }[]>`
+        SELECT TO_CHAR(DATE_TRUNC('day', "createdAt"), 'YYYY-MM-DD') AS "date",
+               COUNT(*)::int AS "count"
+        FROM "analytics_events"
+        WHERE "pageId" = ${dto.pageId}
+          AND "type" = 'PAGE_VIEW'
+          AND "createdAt" >= ${startDate}
+          AND "createdAt" <= ${endDate}
+        GROUP BY DATE_TRUNC('day', "createdAt")
+        ORDER BY DATE_TRUNC('day', "createdAt") ASC
+      `,
+      this.prisma.analyticsEvent.groupBy({
+        by: ['buttonKey'],
+        where: {
+          ...where,
+          type: 'BUTTON_CLICK',
+          buttonKey: { not: null },
+        },
+        _count: { _all: true },
+      }),
+    ]);
 
-    // Totales por tipo de evento
-    const totalViews = events.filter((e: any) => e.type === 'PAGE_VIEW').length;
-    const totalClicks = events.filter((e: any) => e.type === 'BUTTON_CLICK').length;
-    const totalScans = events.filter((e: any) => e.type === 'TAG_SCAN').length;
-
-    // Visitas agrupadas por día
-    const viewsByDayMap: Record<string, number> = {};
-    events
-      .filter((e: any) => e.type === 'PAGE_VIEW')
-      .forEach((e: any) => {
-        const day = e.createdAt.toISOString().slice(0, 10);
-        viewsByDayMap[day] = (viewsByDayMap[day] || 0) + 1;
-      });
-    const viewsByDay = Object.entries(viewsByDayMap)
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    // Clics agrupados por botón
-    const clicksByButtonMap: Record<string, number> = {};
-    events
-      .filter((e: any) => e.type === 'BUTTON_CLICK' && e.buttonKey)
-      .forEach((e: any) => {
-        const key = e.buttonKey || 'unknown';
-        clicksByButtonMap[key] = (clicksByButtonMap[key] || 0) + 1;
-      });
-    const clicksByButton = Object.entries(clicksByButtonMap)
-      .map(([button, count]) => ({ button, count }))
+    const eventCounts = new Map(eventTypeCounts.map(({ type, _count }) => [type, _count._all]));
+    const totalViews = eventCounts.get('PAGE_VIEW') ?? 0;
+    const totalClicks = eventCounts.get('BUTTON_CLICK') ?? 0;
+    const totalScans = eventCounts.get('TAG_SCAN') ?? 0;
+    const clicksByButton = buttonClickCounts
+      .filter(({ buttonKey }) => Boolean(buttonKey))
+      .map(({ buttonKey, _count }) => ({ button: buttonKey!, count: _count._all }))
       .sort((a, b) => b.count - a.count);
 
     return {
       pageId: dto.pageId,
-      total: events.length,
+      total,
       totalViews,
       totalClicks,
       totalScans,
-      viewsByDay,
+      viewsByDay: dailyViews,
       clicksByButton,
       byType: { PAGE_VIEW: totalViews, BUTTON_CLICK: totalClicks, TAG_SCAN: totalScans },
     };

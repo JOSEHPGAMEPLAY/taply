@@ -389,36 +389,47 @@ export class AdminService {
    */
   async getAnalyticsOverview() {
     // Conteos totales
-    const totalUsers = await this.prisma.user.count();
-    const activeUsers = await this.prisma.user.count({ where: { status: 'ACTIVE' } });
-    const totalBusinesses = await this.prisma.business.count();
-    const activeBusinesses = await this.prisma.business.count({ where: { status: 'ACTIVE' } });
-    const totalPages = await this.prisma.page.count();
-    const publishedPages = await this.prisma.page.count({ where: { status: 'PUBLISHED' } });
-    const totalTags = await this.prisma.nfcTag.count();
-    const activeTags = await this.prisma.nfcTag.count({ where: { status: 'ACTIVE' } });
-
-    // Eventos totales
-    const totalEvents = await this.prisma.analyticsEvent.count();
-    const pageViews = await this.prisma.analyticsEvent.count({ where: { type: 'PAGE_VIEW' } });
-    const buttonClicks = await this.prisma.analyticsEvent.count({ where: { type: 'BUTTON_CLICK' } });
-    const tagScans = await this.prisma.analyticsEvent.count({ where: { type: 'TAG_SCAN' } });
-
     // Eventos de los últimos 30 días
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const eventsLast30Days = await this.prisma.analyticsEvent.count({
-      where: { createdAt: { gte: thirtyDaysAgo } },
-    });
-
-    // Usuarios registrados en los últimos 30 días
-    const usersLast30Days = await this.prisma.user.count({
-      where: { createdAt: { gte: thirtyDaysAgo } },
-    });
-
-    // Negocios creados en los últimos 30 días
-    const businessesLast30Days = await this.prisma.business.count({
-      where: { createdAt: { gte: thirtyDaysAgo } },
-    });
+    const [
+      totalUsers,
+      activeUsers,
+      totalBusinesses,
+      activeBusinesses,
+      totalPages,
+      publishedPages,
+      totalTags,
+      activeTags,
+      totalEvents,
+      pageViews,
+      buttonClicks,
+      tagScans,
+      eventsLast30Days,
+      usersLast30Days,
+      businessesLast30Days,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.business.count(),
+      this.prisma.business.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.page.count(),
+      this.prisma.page.count({ where: { status: 'PUBLISHED' } }),
+      this.prisma.nfcTag.count(),
+      this.prisma.nfcTag.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.analyticsEvent.count(),
+      this.prisma.analyticsEvent.count({ where: { type: 'PAGE_VIEW' } }),
+      this.prisma.analyticsEvent.count({ where: { type: 'BUTTON_CLICK' } }),
+      this.prisma.analyticsEvent.count({ where: { type: 'TAG_SCAN' } }),
+      this.prisma.analyticsEvent.count({
+        where: { createdAt: { gte: thirtyDaysAgo } },
+      }),
+      this.prisma.user.count({
+        where: { createdAt: { gte: thirtyDaysAgo } },
+      }),
+      this.prisma.business.count({
+        where: { createdAt: { gte: thirtyDaysAgo } },
+      }),
+    ]);
 
     return {
       users: { total: totalUsers, active: activeUsers, last30Days: usersLast30Days },

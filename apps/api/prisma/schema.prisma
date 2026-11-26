@@ -315,7 +315,7 @@ model AnalyticsEvent {
   page      Page               @relation(fields: [pageId], references: [id], onDelete: Cascade)
   tag       NfcTag?            @relation(fields: [tagId], references: [id], onDelete: SetNull)
 
-  @@index([pageId])
+  @@index([pageId, createdAt])
   @@index([tagId])
   @@index([createdAt])
   @@map("analytics_events")
