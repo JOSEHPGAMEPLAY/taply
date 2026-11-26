@@ -1,4 +1,4 @@
-﻿import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
+﻿import { Injectable, Inject, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
 import { CreateNfcTagDto } from './dto/create-nfc-tag.dto.js';
@@ -53,6 +53,32 @@ export class NfcTagsService {
       where: { id: tagId },
       data: { status: 'ACTIVE' },
     });
+  }
+
+  async unassign(businessId: string, tagId: string) {
+    await this.verifyOwnership(businessId, tagId);
+
+    return this.prisma.$transaction(async (tx: any) => {
+      const { count } = await tx.tagAssignment.updateMany({
+        where: { tagId, endedAt: null },
+        data: { endedAt: new Date() },
+      });
+
+      if (count === 0) {
+        throw new BadRequestException('La etiqueta no tiene una asignación activa');
+      }
+
+      return tx.nfcTag.update({
+        where: { id: tagId },
+        data: { status: 'INVENTORY' },
+      });
+    });
+  }
+
+  async remove(businessId: string, tagId: string) {
+    await this.verifyOwnership(businessId, tagId);
+    await this.prisma.nfcTag.delete({ where: { id: tagId } });
+    return { message: 'Etiqueta eliminada exitosamente' };
   }
 
   async scan(tagId: string) {

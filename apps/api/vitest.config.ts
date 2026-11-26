@@ -1,4 +1,11 @@
+import * as dotenv from 'dotenv';
 import { defineConfig } from 'vitest/config';
+
+dotenv.config({ path: '../../.env' });
+
+if (process.env.DATABASE_URL?.includes('@postgres:')) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL.replace('@postgres:5432', '@localhost:5433');
+}
 
 export default defineConfig({
   test: {

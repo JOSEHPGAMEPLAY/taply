@@ -116,6 +116,14 @@ describe('Pages (E2E)', () => {
         .expect(200);
 
       expect(res.body.id).toBe(pageId);
+      const pageRes = await request(app.getHttpServer())
+        .get(`${baseUrl}/${pageId}?businessId=${businessId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(pageRes.body.versions[0].buttons).toEqual([
+        { key: 'website', label: 'Sitio Web', url: 'https://example.com' },
+      ]);
     });
   });
 
@@ -126,7 +134,9 @@ describe('Pages (E2E)', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(201);
 
-      expect(res.body).toHaveProperty('id');
+      expect(res.body.id).toBe(pageId);
+      expect(res.body.status).toBe('PUBLISHED');
+      expect(res.body.publishedVersionId).toBeTruthy();
     });
   });
 
@@ -137,7 +147,9 @@ describe('Pages (E2E)', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(201);
 
-      expect(res.body).toHaveProperty('id');
+      expect(res.body.id).toBe(pageId);
+      expect(res.body.status).toBe('DRAFT');
+      expect(res.body.publishedVersionId).toBeNull();
     });
   });
 
@@ -167,6 +179,10 @@ describe('Pages (E2E)', () => {
         .expect(200);
 
       expect(deleteRes.body).toHaveProperty('message');
+      await request(app.getHttpServer())
+        .get(`${baseUrl}/${createRes.body.id}?businessId=${businessId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(404);
     });
   });
 });
