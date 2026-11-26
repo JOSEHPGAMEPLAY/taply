@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
@@ -9,6 +9,12 @@ import {
 } from './dto/analytics-query.dto.js';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function escapeCsvCell(value: string | null): string {
+  const normalized = value ?? '';
+  const safeValue = /^[\u0000-\u0020]*[=+\-@]/.test(normalized) ? `'${normalized}` : normalized;
+  return `"${safeValue.replace(/"/g, '""')}"`;
+}
 
 type AnalyticsAggregationResults = [
   total: number,
@@ -30,15 +36,9 @@ type AnalyticsAggregationResults = [
 export class AnalyticsService {
   constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
 
-  async getStats(dto: AnalyticsQueryDto) {
-    const endDate = dto.endDate ? new Date(dto.endDate) : new Date();
-    const rangeDays = dto.rangeDays ?? DEFAULT_ANALYTICS_RANGE_DAYS;
-    const startDate = dto.startDate
-      ? new Date(dto.startDate)
-      : new Date(endDate.getTime() - rangeDays * MS_PER_DAY);
-    if (startDate > endDate || endDate.getTime() - startDate.getTime() > MAX_ANALYTICS_RANGE_DAYS * MS_PER_DAY) {
-      throw new BadRequestException(`El rango de analíticas no puede superar ${MAX_ANALYTICS_RANGE_DAYS} días`);
-    }
+  async getStats(dto: AnalyticsQueryDto, userId: string) {
+    await this.ensurePageOwnership(dto.pageId, userId);
+    const { startDate, endDate } = this.getDateRange(dto);
     const where = {
       pageId: dto.pageId,
       createdAt: { gte: startDate, lte: endDate },
@@ -92,6 +92,50 @@ export class AnalyticsService {
       clicksByButton,
       byType: { PAGE_VIEW: totalViews, BUTTON_CLICK: totalClicks, TAG_SCAN: totalScans },
     };
+  }
+
+  async exportCsv(dto: AnalyticsQueryDto, userId: string): Promise<string> {
+    await this.ensurePageOwnership(dto.pageId, userId);
+    const { startDate, endDate } = this.getDateRange(dto);
+    const events = await this.prisma.analyticsEvent.findMany({
+      where: {
+        pageId: dto.pageId,
+        createdAt: { gte: startDate, lte: endDate },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true, type: true, buttonKey: true, tagId: true },
+    });
+    const rows = [
+      ['fecha', 'tipo', 'boton', 'tagId'],
+      ...events.map((event: { createdAt: Date; type: string; buttonKey: string | null; tagId: string | null }) => [
+        event.createdAt.toISOString(),
+        event.type,
+        event.buttonKey,
+        event.tagId,
+      ]),
+    ];
+
+    return `\uFEFF${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}`;
+  }
+
+  private async ensurePageOwnership(pageId: string, userId: string): Promise<void> {
+    const page = await this.prisma.page.findFirst({
+      where: { id: pageId, business: { is: { ownerId: userId } } },
+      select: { id: true },
+    });
+    if (!page) throw new NotFoundException('Página no encontrada');
+  }
+
+  private getDateRange(dto: AnalyticsQueryDto): { startDate: Date; endDate: Date } {
+    const endDate = dto.endDate ? new Date(dto.endDate) : new Date();
+    const rangeDays = dto.rangeDays ?? DEFAULT_ANALYTICS_RANGE_DAYS;
+    const startDate = dto.startDate
+      ? new Date(dto.startDate)
+      : new Date(endDate.getTime() - rangeDays * MS_PER_DAY);
+    if (startDate > endDate || endDate.getTime() - startDate.getTime() > MAX_ANALYTICS_RANGE_DAYS * MS_PER_DAY) {
+      throw new BadRequestException(`El rango de analíticas no puede superar ${MAX_ANALYTICS_RANGE_DAYS} días`);
+    }
+    return { startDate, endDate };
   }
 
   /**

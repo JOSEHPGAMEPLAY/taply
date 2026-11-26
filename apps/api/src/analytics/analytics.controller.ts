@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Query, UseGuards, Delete, BadRequestException } from '@nestjs/common';
+﻿import { Controller, Get, Query, UseGuards, Delete, BadRequestException, Header, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service.js';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto.js';
@@ -29,8 +29,22 @@ export class AnalyticsController {
   @ApiQuery({ name: 'endDate', required: false, type: String, description: 'Fecha de fin (ISO 8601, opcional)' })
   @ApiResponse({ status: 200, description: 'Estadísticas obtenidas exitosamente' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async getStats(@Query() dto: AnalyticsQueryDto) {
-    return this.analyticsService.getStats(dto);
+  async getStats(@Query() dto: AnalyticsQueryDto, @Request() request: { user: { userId: string } }) {
+    return this.analyticsService.getStats(dto, request.user?.userId);
+  }
+
+  @Get('export')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="taply-analytics.csv"')
+  @ApiOperation({ summary: 'Exportar eventos de analíticas a CSV' })
+  @ApiQuery({ name: 'pageId', required: true, type: String, description: 'ID de la página' })
+  @ApiQuery({ name: 'startDate', required: false, type: String, description: 'Fecha de inicio (ISO 8601, opcional)' })
+  @ApiQuery({ name: 'endDate', required: false, type: String, description: 'Fecha de fin (ISO 8601, opcional)' })
+  @ApiQuery({ name: 'rangeDays', required: false, type: Number, description: 'Días a exportar (1–365; por defecto 30)' })
+  @ApiResponse({ status: 200, description: 'Archivo CSV con eventos de analíticas' })
+  @ApiResponse({ status: 404, description: 'Página no encontrada' })
+  async exportCsv(@Query() dto: AnalyticsQueryDto, @Request() request: { user: { userId: string } }): Promise<string> {
+    return this.analyticsService.exportCsv(dto, request.user?.userId);
   }
 
   @Delete('events/prune')

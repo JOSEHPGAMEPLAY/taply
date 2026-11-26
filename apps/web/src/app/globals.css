@@ -17,3 +17,196 @@
     @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none;
   }
 }
+
+html[data-theme='dark'] .dashboard-shell {
+  --dashboard-canvas: #111827;
+  --dashboard-surface: #1f2937;
+  --dashboard-surface-raised: #273548;
+  --dashboard-border: #3b4a5d;
+  --dashboard-text-primary: #f3f4f6;
+  --dashboard-text-secondary: #cbd5e1;
+  --dashboard-text-muted: #9ca3af;
+  color-scheme: dark;
+  color: var(--dashboard-text-primary);
+  background-color: var(--dashboard-canvas);
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-white {
+  background-color: var(--dashboard-surface);
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-gray-50 {
+  background-color: #17212f;
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-gray-100 {
+  background-color: var(--dashboard-surface-raised);
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-gray-200 {
+  background-color: #344256;
+}
+
+html[data-theme='dark'] .dashboard-shell .hover\:bg-gray-50:hover {
+  background-color: #17212f;
+}
+
+html[data-theme='dark'] .dashboard-shell .hover\:bg-gray-100:hover {
+  background-color: var(--dashboard-surface-raised);
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-blue-50,
+html[data-theme='dark'] .dashboard-shell .bg-blue-100 {
+  background-color: #1c3554;
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-green-50,
+html[data-theme='dark'] .dashboard-shell .bg-green-100 {
+  background-color: #193b32;
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-purple-50,
+html[data-theme='dark'] .dashboard-shell .bg-purple-100 {
+  background-color: #33284a;
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-red-50,
+html[data-theme='dark'] .dashboard-shell .bg-red-100 {
+  background-color: #482a30;
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-yellow-50,
+html[data-theme='dark'] .dashboard-shell .bg-yellow-100 {
+  background-color: #45391e;
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-amber-50,
+html[data-theme='dark'] .dashboard-shell .bg-amber-100 {
+  background-color: #45391e;
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-orange-50,
+html[data-theme='dark'] .dashboard-shell .bg-orange-100 {
+  background-color: #49331f;
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-indigo-50,
+html[data-theme='dark'] .dashboard-shell .bg-indigo-100 {
+  background-color: #292f58;
+}
+
+html[data-theme='dark'] .dashboard-shell .bg-pink-50,
+html[data-theme='dark'] .dashboard-shell .bg-pink-100,
+html[data-theme='dark'] .dashboard-shell .bg-rose-50,
+html[data-theme='dark'] .dashboard-shell .bg-rose-100 {
+  background-color: #472b40;
+}
+
+html[data-theme='dark'] .dashboard-shell .text-gray-900,
+html[data-theme='dark'] .dashboard-shell .text-gray-800,
+html[data-theme='dark'] .dashboard-shell .text-black {
+  color: var(--dashboard-text-primary);
+}
+
+html[data-theme='dark'] .dashboard-shell .text-gray-700,
+html[data-theme='dark'] .dashboard-shell .text-gray-600 {
+  color: var(--dashboard-text-secondary);
+}
+
+html[data-theme='dark'] .dashboard-shell .text-gray-500,
+html[data-theme='dark'] .dashboard-shell .text-gray-400 {
+  color: var(--dashboard-text-muted);
+}
+
+html[data-theme='dark'] .dashboard-shell .hover\:text-gray-900:hover,
+html[data-theme='dark'] .dashboard-shell .hover\:text-gray-700:hover,
+html[data-theme='dark'] .dashboard-shell .hover\:text-gray-600:hover {
+  color: var(--dashboard-text-primary);
+}
+
+html[data-theme='dark'] .dashboard-shell .text-blue-600,
+html[data-theme='dark'] .dashboard-shell .text-blue-700 {
+  color: #93c5fd;
+}
+
+html[data-theme='dark'] .dashboard-shell .text-green-600,
+html[data-theme='dark'] .dashboard-shell .text-green-700,
+html[data-theme='dark'] .dashboard-shell .text-green-800 {
+  color: #86efac;
+}
+
+html[data-theme='dark'] .dashboard-shell .text-purple-600,
+html[data-theme='dark'] .dashboard-shell .text-purple-700 {
+  color: #d8b4fe;
+}
+
+html[data-theme='dark'] .dashboard-shell .text-red-600,
+html[data-theme='dark'] .dashboard-shell .text-red-700,
+html[data-theme='dark'] .dashboard-shell .text-red-800 {
+  color: #fca5a5;
+}
+
+html[data-theme='dark'] .dashboard-shell .text-yellow-600,
+html[data-theme='dark'] .dashboard-shell .text-yellow-700,
+html[data-theme='dark'] .dashboard-shell .text-yellow-800,
+html[data-theme='dark'] .dashboard-shell .text-amber-500,
+html[data-theme='dark'] .dashboard-shell .text-amber-600 {
+  color: #fde68a;
+}
+
+html[data-theme='dark'] .dashboard-shell .hover\:text-amber-600:hover {
+  color: #fde68a;
+}
+
+html[data-theme='dark'] .dashboard-shell .analytics-chart-bar-selected {
+  background-color: #60a5fa;
+}
+
+html[data-theme='dark'] .dashboard-shell .text-orange-600,
+html[data-theme='dark'] .dashboard-shell .text-orange-700,
+html[data-theme='dark'] .dashboard-shell .text-orange-800 {
+  color: #fdba74;
+}
+
+html[data-theme='dark'] .dashboard-shell .text-indigo-600,
+html[data-theme='dark'] .dashboard-shell .text-indigo-700 {
+  color: #a5b4fc;
+}
+
+html[data-theme='dark'] .dashboard-shell .text-pink-600,
+html[data-theme='dark'] .dashboard-shell .text-pink-700,
+html[data-theme='dark'] .dashboard-shell .text-rose-600,
+html[data-theme='dark'] .dashboard-shell .text-rose-700 {
+  color: #f9a8d4;
+}
+
+html[data-theme='dark'] .dashboard-shell .border-gray-100,
+html[data-theme='dark'] .dashboard-shell .border-gray-50,
+html[data-theme='dark'] .dashboard-shell .border-gray-200,
+html[data-theme='dark'] .dashboard-shell .border-gray-300 {
+  border-color: var(--dashboard-border);
+}
+
+html[data-theme='dark'] .dashboard-shell .border-b,
+html[data-theme='dark'] .dashboard-shell .border-t {
+  border-color: var(--dashboard-border);
+}
+
+html[data-theme='dark'] .dashboard-shell input:not([type='checkbox']):not([type='radio']),
+html[data-theme='dark'] .dashboard-shell select,
+html[data-theme='dark'] .dashboard-shell textarea {
+  color: var(--dashboard-text-primary);
+  background-color: var(--dashboard-surface);
+  border-color: var(--dashboard-border);
+}
+
+html[data-theme='dark'] .dashboard-shell input:not([type='checkbox']):not([type='radio']):focus,
+html[data-theme='dark'] .dashboard-shell select:focus,
+html[data-theme='dark'] .dashboard-shell textarea:focus {
+  border-color: #60a5fa;
+}
+
+html[data-theme='dark'] .dashboard-shell input::placeholder,
+html[data-theme='dark'] .dashboard-shell textarea::placeholder {
+  color: var(--dashboard-text-muted);
+}

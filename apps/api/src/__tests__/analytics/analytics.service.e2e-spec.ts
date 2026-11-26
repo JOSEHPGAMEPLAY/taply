@@ -10,9 +10,13 @@ import { vi } from 'vitest';
 describe('AnalyticsService.getStats', () => {
   const pageId = 'page-1';
   let prisma: {
+    page: {
+      findFirst: ReturnType<typeof vi.fn>;
+    };
     analyticsEvent: {
       count: ReturnType<typeof vi.fn>;
       groupBy: ReturnType<typeof vi.fn>;
+      findMany: ReturnType<typeof vi.fn>;
     };
     $queryRaw: ReturnType<typeof vi.fn>;
   };
@@ -20,9 +24,13 @@ describe('AnalyticsService.getStats', () => {
 
   beforeEach(() => {
     prisma = {
+      page: {
+        findFirst: vi.fn().mockResolvedValue({ id: pageId }),
+      },
       analyticsEvent: {
         count: vi.fn(),
         groupBy: vi.fn(),
+        findMany: vi.fn(),
       },
       $queryRaw: vi.fn(),
     };
@@ -55,7 +63,7 @@ describe('AnalyticsService.getStats', () => {
       startDate: '2025-01-10T00:00:00.000Z',
       endDate: '2025-01-12T00:00:00.000Z',
     });
-    const stats = await service.getStats(dto);
+    const stats = await service.getStats(dto, 'user-1');
     const expectedWhere = {
       pageId,
       createdAt: {
@@ -81,6 +89,10 @@ describe('AnalyticsService.getStats', () => {
       byType: { PAGE_VIEW: 3, BUTTON_CLICK: 2, TAG_SCAN: 1 },
     });
     expect(prisma.analyticsEvent.count).toHaveBeenCalledWith({ where: expectedWhere });
+    expect(prisma.page.findFirst).toHaveBeenCalledWith({
+      where: { id: pageId, business: { is: { ownerId: 'user-1' } } },
+      select: { id: true },
+    });
     expect(prisma.analyticsEvent.groupBy).toHaveBeenNthCalledWith(1, {
       by: ['type'],
       where: expectedWhere,
@@ -119,7 +131,7 @@ describe('AnalyticsService.getStats', () => {
     prisma.$queryRaw.mockResolvedValue([]);
 
     const dto = Object.assign(new AnalyticsQueryDto(), { pageId, rangeDays: 7 });
-    const stats = await service.getStats(dto);
+    const stats = await service.getStats(dto, 'user-1');
 
     expect(stats).toEqual({
       pageId,
@@ -150,11 +162,57 @@ describe('AnalyticsService.getStats', () => {
       endDate: '2025-01-01T00:00:00.000Z',
     });
 
-    await expect(service.getStats(dto)).rejects.toThrow(
+    await expect(service.getStats(dto, 'user-1')).rejects.toThrow(
       `El rango de analíticas no puede superar ${MAX_ANALYTICS_RANGE_DAYS} días`,
     );
     expect(prisma.analyticsEvent.count).not.toHaveBeenCalled();
     expect(prisma.analyticsEvent.groupBy).not.toHaveBeenCalled();
     expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('should export the selected page events as spreadsheet-safe CSV', async () => {
+    const dto = Object.assign(new AnalyticsQueryDto(), {
+      pageId,
+      rangeDays: 7,
+    });
+    prisma.analyticsEvent.findMany.mockResolvedValue([
+      {
+        createdAt: new Date('2025-01-11T12:30:00.000Z'),
+        type: 'BUTTON_CLICK',
+        buttonKey: '=SUM(1,1)',
+        tagId: null,
+      },
+      {
+        createdAt: new Date('2025-01-12T12:30:00.000Z'),
+        type: 'BUTTON_CLICK',
+        buttonKey: '\n=SUM(2,2)',
+        tagId: null,
+      },
+    ]);
+
+    const csv = await service.exportCsv(dto, 'user-1');
+
+    expect(csv).toBe(
+      '\uFEFF"fecha","tipo","boton","tagId"\r\n"2025-01-11T12:30:00.000Z","BUTTON_CLICK","\'=SUM(1,1)",""\r\n"2025-01-12T12:30:00.000Z","BUTTON_CLICK","\'\n=SUM(2,2)",""',
+    );
+    expect(prisma.analyticsEvent.findMany).toHaveBeenCalledWith({
+      where: {
+        pageId,
+        createdAt: {
+          gte: expect.any(Date),
+          lte: expect.any(Date),
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true, type: true, buttonKey: true, tagId: true },
+    });
+  });
+
+  it('should not export events when the page belongs to another user', async () => {
+    const dto = Object.assign(new AnalyticsQueryDto(), { pageId });
+    prisma.page.findFirst.mockResolvedValue(null);
+
+    await expect(service.exportCsv(dto, 'another-user')).rejects.toThrow('Página no encontrada');
+    expect(prisma.analyticsEvent.findMany).not.toHaveBeenCalled();
   });
 });

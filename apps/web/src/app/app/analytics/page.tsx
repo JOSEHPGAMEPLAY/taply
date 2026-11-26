@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Loader2,
   TrendingUp,
+  Download,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -38,8 +39,11 @@ interface Page {
 export default function AnalyticsPage() {
   const [pages, setPages] = useState<Page[]>([]);
   const [selectedPageId, setSelectedPageId] = useState<string>('');
+  const [rangeDays, setRangeDays] = useState(30);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -48,7 +52,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const loadPages = async () => {
       try {
-        const data = await api.getPages().catch(() => []);
+        const data = await api.getPages();
         const pagesList = (Array.isArray(data) ? data : []) as Page[];
         setPages(pagesList);
         if (pagesList.length > 0 && pagesList[0]) {
@@ -56,6 +60,9 @@ export default function AnalyticsPage() {
         }
       } catch {
         setError('No se pudieron cargar las páginas');
+        setPages([]);
+      } finally {
+        setLoading(false);
       }
     };
     loadPages();
@@ -67,31 +74,58 @@ export default function AnalyticsPage() {
   useEffect(() => {
     if (!selectedPageId) return;
 
+    let active = true;
     const loadStats = async () => {
       try {
         setLoading(true);
-        const data = await api.getStats(selectedPageId);
+        setSelectedDay(null);
+        const data = await api.getStats(selectedPageId, undefined, undefined, rangeDays);
 
-        // Parse the API response
         const statsData: Stats = {
-          totalViews: (data as any).totalViews || 0,
-          totalClicks: (data as any).totalClicks || 0,
-          totalScans: (data as any).totalScans || 0,
-          viewsByDay: (data as any).viewsByDay || [],
-          clicksByButton: (data as any).clicksByButton || [],
+          totalViews: data.totalViews || 0,
+          totalClicks: data.totalClicks || 0,
+          totalScans: data.totalScans || 0,
+          viewsByDay: data.viewsByDay || [],
+          clicksByButton: data.clicksByButton || [],
         };
+        if (!active) return;
         setStats(statsData);
         setError(null);
       } catch (err) {
+        if (!active) return;
         setError(err instanceof Error ? err.message : 'No se pudieron cargar las estadísticas');
         setStats(null);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     loadStats();
-  }, [selectedPageId]);
+    return () => {
+      active = false;
+    };
+  }, [selectedPageId, rangeDays]);
+
+  const exportCsv = async () => {
+    if (!selectedPageId) return;
+
+    try {
+      setExporting(true);
+      const csv = await api.exportAnalyticsCsv(selectedPageId, rangeDays);
+      const url = URL.createObjectURL(csv);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `taply-analiticas-${selectedPageId}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudieron exportar las analíticas');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   /**
    * Calcula el valor máximo para escalar las barras del gráfico.
@@ -105,9 +139,11 @@ export default function AnalyticsPage() {
    * Formatea la fecha para mostrarla de forma corta.
    */
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+    const date = new Date(`${dateStr}T00:00:00Z`);
+    return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', timeZone: 'UTC' });
   };
+
+  const selectedDayData = stats?.viewsByDay.find((day) => day.date === selectedDay);
 
   return (
     <div className="space-y-6">
@@ -126,18 +162,45 @@ export default function AnalyticsPage() {
       )}
 
       {/* Page selector */}
-      {!loading && pages.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Seleccionar página</label>
-          <select
-            value={selectedPageId}
-            onChange={(e) => setSelectedPageId(e.target.value)}
-            className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+      {pages.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div>
+              <label htmlFor="analytics-page" className="block text-sm font-medium text-gray-700 mb-1">Seleccionar página</label>
+              <select
+                id="analytics-page"
+                value={selectedPageId}
+                onChange={(e) => setSelectedPageId(e.target.value)}
+                className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              >
+                {pages.map((page) => (
+                  <option key={page.id} value={page.id}>{page.slug}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="analytics-range" className="block text-sm font-medium text-gray-700 mb-1">Periodo</label>
+              <select
+                id="analytics-range"
+                value={rangeDays}
+                onChange={(event) => setRangeDays(Number(event.target.value))}
+                className="w-full sm:w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              >
+                <option value={7}>Últimos 7 días</option>
+                <option value={30}>Últimos 30 días</option>
+                <option value={90}>Últimos 90 días</option>
+              </select>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={exportCsv}
+            disabled={!selectedPageId || exporting}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {pages.map((page) => (
-              <option key={page.id} value={page.id}>{page.slug}</option>
-            ))}
-          </select>
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {exporting ? 'Exportando…' : 'Exportar CSV'}
+          </button>
         </div>
       )}
 
@@ -216,17 +279,38 @@ export default function AnalyticsPage() {
           {/* Visits by day chart */}
           {stats.viewsByDay.length > 0 && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Visitas por día</h3>
-              <div className="flex items-end gap-2 h-48">
-                {stats.viewsByDay.slice(-14).map((day, i) => {
+              <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Visitas por día</h3>
+                  <p className="text-xs text-gray-500 mt-1">Selecciona una barra para consultar el detalle del día.</p>
+                </div>
+                {selectedDayData && (
+                  <p className="text-sm font-medium text-blue-700" aria-live="polite">
+                    {formatDate(selectedDayData.date)}: {selectedDayData.count} visitas
+                  </p>
+                )}
+              </div>
+              <div className="overflow-x-auto pb-2">
+                <div
+                  className="flex items-end gap-2 h-48"
+                  role="group"
+                  aria-label="Visitas por día; selecciona una fecha para ver su detalle"
+                  style={{ minWidth: `${Math.max(560, Math.min(stats.viewsByDay.length, rangeDays) * 34)}px` }}
+                >
+                {stats.viewsByDay.slice(-rangeDays).map((day) => {
                   const height = (day.count / getMaxValue()) * 100;
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <div key={day.date} className="flex-1 flex flex-col items-center gap-1 min-w-0">
                       <span className="text-xs text-gray-500">{day.count}</span>
-                      <div
-                        className="w-full bg-blue-500 rounded-t transition-all hover:bg-blue-600 min-h-[4px]"
+                      <button
+                        type="button"
+                        aria-label={`${formatDate(day.date)}: ${day.count} visitas`}
+                        aria-pressed={selectedDay === day.date}
+                        onClick={() => setSelectedDay(day.date)}
+                        className={`w-full rounded-t transition-colors min-h-[4px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
+                          selectedDay === day.date ? 'bg-blue-700 analytics-chart-bar-selected' : 'bg-blue-500 hover:bg-blue-600'
+                        }`}
                         style={{ height: `${Math.max(height, 4)}%` }}
-                        title={`${day.count} visitas`}
                       />
                       <span className="text-xs text-gray-400 truncate w-full text-center">
                         {formatDate(day.date)}
@@ -234,6 +318,7 @@ export default function AnalyticsPage() {
                     </div>
                   );
                 })}
+                </div>
               </div>
             </div>
           )}
