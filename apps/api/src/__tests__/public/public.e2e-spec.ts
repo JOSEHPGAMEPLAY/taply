@@ -15,12 +15,15 @@ describe('Public (E2E)', () => {
   let businessId: string;
   let pageId: string;
   let tagId: string;
+  let pageSlug: string;
 
   const publicBaseUrl = '/api/v1/public';
 
   // Helper para registrar, crear negocio, página y tag
   async function setupTestData() {
-    const email = `public-test-${Date.now()}@example.com`;
+    const testRunId = Date.now();
+    const email = `public-test-${testRunId}@example.com`;
+    pageSlug = `public-test-page-${testRunId}`;
 
     // Register
     await request(app.getHttpServer())
@@ -44,7 +47,7 @@ describe('Public (E2E)', () => {
     const pageRes = await request(app.getHttpServer())
       .post('/api/v1/pages?businessId=' + businessId)
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({ slug: 'public-test-page' });
+      .send({ slug: pageSlug });
     pageId = pageRes.body.id;
 
     // Publish page
@@ -119,7 +122,23 @@ describe('Public (E2E)', () => {
 
       expect(res.body).toHaveProperty('redirectUrl');
       expect(res.body).toHaveProperty('page');
-      expect(res.body.page.slug).toBe('public-test-page');
+      expect(res.body.page.slug).toBe(pageSlug);
+    });
+  });
+
+  describe('GET /public/pages/:slug', () => {
+    it('debe devolver la página publicada sin autenticación', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`${publicBaseUrl}/pages/${pageSlug}`)
+        .expect(200);
+
+      expect(res.body.page).toEqual({
+        id: pageId,
+        slug: pageSlug,
+      });
+      expect(res.body.business).toMatchObject({ name: 'Public Test Business' });
+      expect(res.body.publishedVersion).toHaveProperty('config');
+      expect(res.body.publishedVersion).toHaveProperty('buttons');
     });
   });
 

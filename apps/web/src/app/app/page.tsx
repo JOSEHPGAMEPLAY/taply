@@ -3,17 +3,17 @@
 import { useEffect, useState } from 'react';
 import { Building2, FileText, Radio, ArrowRight, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, type DashboardSummary } from '@/lib/api';
 
 /**
  * Dashboard principal con resumen de negocios, páginas y etiquetas.
- * Carga datos reales desde la API y muestra skeleton loaders mientras carga.
+ * Carga el resumen desde la API y muestra indicadores mientras carga.
  */
 export default function DashboardPage() {
-  const [stats, setStats] = useState<{ businesses: number; pages: number; tags: number }>({
+  const [stats, setStats] = useState<DashboardSummary>({
     businesses: 0,
     pages: 0,
-    tags: 0,
+    nfcTags: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,18 +26,10 @@ export default function DashboardPage() {
 
     const loadStats = async () => {
       try {
-        const [businesses, pages, tags] = await Promise.all([
-          api.getBusinesses().catch(() => []),
-          api.getPages().catch(() => []),
-          api.getNfcTags().catch(() => []),
-        ]);
+        const summary = await api.getDashboardSummary();
 
         if (!cancelled) {
-          setStats({
-            businesses: Array.isArray(businesses) ? businesses.length : 0,
-            pages: Array.isArray(pages) ? pages.length : 0,
-            tags: Array.isArray(tags) ? tags.length : 0,
-          });
+          setStats(summary);
           setError(null);
         }
       } catch {
@@ -60,7 +52,7 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-busy={loading}>
       {/* Error banner */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
@@ -75,7 +67,7 @@ export default function DashboardPage() {
         <p className="mt-2 text-blue-100 max-w-2xl">
           Gestiona tus negocios, páginas digitales y etiquetas NFC desde un solo lugar.
         </p>
-        {stats.businesses === 0 && (
+        {!loading && !error && stats.businesses === 0 && (
           <Link
             href="/app/businesses"
             className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-white text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm font-semibold"
@@ -92,7 +84,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Negocios</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{stats.businesses}</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900" aria-live="polite">
+                {loading ? '…' : stats.businesses}
+              </p>
             </div>
             <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
               <Building2 className="w-6 h-6 text-blue-600" />
@@ -107,7 +101,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Páginas</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{stats.pages}</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900" aria-live="polite">
+                {loading ? '…' : stats.pages}
+              </p>
             </div>
             <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
               <FileText className="w-6 h-6 text-green-600" />
@@ -122,7 +118,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">NFC Tags</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{stats.tags}</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900" aria-live="polite">
+                {loading ? '…' : stats.nfcTags}
+              </p>
             </div>
             <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
               <Radio className="w-6 h-6 text-purple-600" />
@@ -135,7 +133,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Getting started - only show if no businesses */}
-      {stats.businesses === 0 && (
+      {!loading && !error && stats.businesses === 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Primeros pasos</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

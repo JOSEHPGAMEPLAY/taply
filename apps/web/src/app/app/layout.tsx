@@ -24,6 +24,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    setTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = nextTheme;
+    setTheme(nextTheme);
+
+    try {
+      localStorage.setItem('taply_theme', nextTheme);
+    } catch {
+      // The theme still applies for this session when storage is unavailable.
+    }
+  };
 
   // Hidratar usuario desde localStorage inmediatamente para evitar página en blanco
   // cuando login() redirige a /app antes de que el contexto propague el estado
@@ -77,7 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pageTitle = navItems.find((item) => item.href === pathname)?.label || 'Dashboard';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="dashboard-shell min-h-screen bg-gray-50">
       {/* Sidebar */}
       <DashboardSidebar
         navItems={navItems}
@@ -94,6 +111,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <DashboardHeader
           title={pageTitle}
           onMenuClick={() => setSidebarOpen(true)}
+          theme={theme}
+          onThemeToggle={toggleTheme}
         />
 
         {/* Page content */}

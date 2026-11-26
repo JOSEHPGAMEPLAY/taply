@@ -13,6 +13,7 @@ import { AuditModule } from './audit/audit.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { TemplatesModule } from './templates/templates.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { TemplatesModule } from './templates/templates.module.js';
     AdminModule,
     MailModule,
     TemplatesModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}

@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
 import { MailService } from '../mail/mail.service.js';
@@ -14,6 +14,8 @@ import { ContactDto } from './dto/contact.dto.js';
  */
 @Injectable()
 export class PublicService {
+  private readonly logger = new Logger(PublicService.name);
+
   constructor(
     @Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient,
     private readonly mailService: MailService,
@@ -123,8 +125,26 @@ export class PublicService {
   async getPublicPage(slug: string) {
     const page = await this.prisma.page.findFirst({
       where: { slug, status: 'PUBLISHED' },
-      include: {
-        business: true,
+      select: {
+        id: true,
+        slug: true,
+        publishedVersionId: true,
+        business: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            status: true,
+          },
+        },
+        versions: {
+          where: { status: 'PUBLISHED' },
+          select: {
+            id: true,
+            config: true,
+            buttons: true,
+          },
+        },
       },
     });
 
@@ -138,26 +158,28 @@ export class PublicService {
     }
 
     // Verificar que la página tenga una versión publicada
-    if (!page.publishedVersionId) {
+    const publishedVersionId = page.publishedVersionId;
+    if (!publishedVersionId) {
       return { error: 'Página sin versión publicada', statusCode: 400 };
     }
 
-    // Obtener la versión publicada
-    const publishedVersion = await this.prisma.pageVersion.findUnique({
-      where: { id: page.publishedVersionId },
-    });
+    // Reutilizar la versión relacionada y consultar por ID solo como respaldo.
+    const publishedVersion =
+      page.versions.find((version: { id: string }) => version.id === publishedVersionId) ??
+      (await this.prisma.pageVersion.findUnique({
+        where: { id: publishedVersionId },
+        select: {
+          id: true,
+          config: true,
+          buttons: true,
+        },
+      }));
 
     if (!publishedVersion) {
       return { error: 'Versión publicada no encontrada', statusCode: 400 };
     }
 
-    // Registrar evento PAGE_VIEW automáticamente
-    await this.prisma.analyticsEvent.create({
-      data: {
-        pageId: page.id,
-        type: 'PAGE_VIEW',
-      },
-    });
+    this.trackPageView(page.id);
 
     return {
       page: {
@@ -174,6 +196,21 @@ export class PublicService {
         buttons: publishedVersion.buttons,
       },
     };
+  }
+
+  private trackPageView(pageId: string): void {
+    void Promise.resolve()
+      .then(() =>
+        this.prisma.analyticsEvent.create({
+          data: {
+            pageId,
+            type: 'PAGE_VIEW',
+          },
+        }),
+      )
+      .catch(() => {
+        this.logger.error('Failed to record automatic PAGE_VIEW analytics event');
+      });
   }
 
   /**

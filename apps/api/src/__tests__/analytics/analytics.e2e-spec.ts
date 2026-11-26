@@ -86,4 +86,23 @@ describe('Analytics (E2E)', () => {
         .expect(401);
     });
   });
+
+  describe('GET /analytics/export', () => {
+    it('debe descargar los eventos como CSV', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`${baseUrl}/export?pageId=${pageId}&rangeDays=7`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.headers['content-type']).toMatch(/text\/csv; charset=utf-8/);
+      expect(res.headers['content-disposition']).toContain('attachment; filename="taply-analytics.csv"');
+      expect(res.text).toContain('"fecha","tipo","boton","tagId"');
+    });
+
+    it('debe requerir autenticación', async () => {
+      await request(app.getHttpServer())
+        .get(`${baseUrl}/export?pageId=${pageId}`)
+        .expect(401);
+    });
+  });
 });

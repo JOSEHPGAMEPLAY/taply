@@ -262,6 +262,16 @@
 | 19 | **Exportar analíticas** | Backend | Medio | Endpoint `GET /analytics/export` para descargar CSV |
 | 20 | **Panel de super-admin** | Backend | Alto | CRUD de usuarios, negocios y etiquetas desde un panel admin |
 
+### 🚀 Rendimiento — Sprint 6
+
+| # | Tarea | Módulo | Esfuerzo | Descripción |
+|---|---|---|---|---|
+| 21 | **[GitHub #30] Acotar y agregar consultas de analíticas** | Backend/DB | Alto | Filtrar por un rango predeterminado y agregar eventos en PostgreSQL; evaluar índices según el patrón de consulta |
+| 22 | **[GitHub #31] Reducir latencia de páginas públicas** | Backend | Alto | Reducir lecturas de la página pública y evitar que el tracking síncrono prolongue la respuesta sin perder eventos |
+| 23 | **[GitHub #32] Resumen eficiente del dashboard** | Backend/Frontend | Alto | Exponer conteos mínimos autenticados y dejar de descargar colecciones completas y versiones para las tarjetas |
+| 24 | **[GitHub #29] Paralelizar métricas administrativas** | Backend | Medio | Ejecutar conteos independientes en paralelo o consolidarlos conservando resultados y autorización |
+| 25 | **[GitHub #33] Navegación interna sin recarga completa** | Frontend | Medio | Usar `next/link` en la barra lateral del dashboard manteniendo estados activos y accesibilidad |
+
 ---
 
 ## 📊 Resumen Numérico
@@ -278,7 +288,7 @@
 | **Scripts de automatización** | backup.ps1, restore.ps1 |
 | **Contenedores Docker** | 3 (postgres, api, web) |
 | **Funcionalidades críticas pendientes** | 5 (página pública, tracking, activar negocio) |
-| **Items en backlog** | 20 (5 críticos, 5 altos, 5 medios, 5 bajos) |
+| **Items en backlog** | 25 (20 originales + 5 de rendimiento en Sprint 6) |
 
 ---
 

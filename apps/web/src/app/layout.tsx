@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
+import Script from 'next/script';
 import { Providers } from '@/components/providers';
 import './globals.css';
 
@@ -20,7 +21,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
+      <Script id="theme-preference" strategy="beforeInteractive">
+        {`try {
+          document.documentElement.dataset.theme = localStorage.getItem('taply_theme') === 'dark' ? 'dark' : 'light';
+        } catch {
+          document.documentElement.dataset.theme = 'light';
+        }`}
+      </Script>
       <body>
         <Providers>{children}</Providers>
         <Analytics />
