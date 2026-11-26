@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API lint, build and test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: taply_ci
+          POSTGRES_USER: taply_ci
+          POSTGRES_PASSWORD: taply_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taply_ci -d taply_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://taply_ci:taply_ci@localhost:5432/taply_ci?schema=public
+      JWT_SECRET: ci-jwt-secret
+      JWT_EXPIRATION: 15m
+      REFRESH_SECRET: ci-refresh-secret
+      REFRESH_EXPIRATION: 7d
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Cache API node_modules
+        id: api-cache
+        uses: actions/cache@v4
+        with:
+          path: apps/api/node_modules
+          key: ${{ runner.os }}-node24-api-${{ hashFiles('apps/api/package-lock.json', 'apps/api/prisma/schema.prisma') }}
+
+      - name: Install API dependencies
+        if: steps.api-cache.outputs.cache-hit != 'true'
+        run: npm ci --legacy-peer-deps
+        working-directory: apps/api
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+        working-directory: apps/api
+
+      - name: Lint API
+        run: npm run lint
+        working-directory: apps/api
+
+      - name: Build API
+        run: npm run build
+        working-directory: apps/api
+
+      - name: Test API
+        run: npm test
+        working-directory: apps/api
+
+  web:
+    name: Web build
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+      API_INTERNAL_URL: http://localhost:3001/api/v1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Cache web node_modules
+        id: web-cache
+        uses: actions/cache@v4
+        with:
+          path: apps/web/node_modules
+          key: ${{ runner.os }}-node24-web-${{ hashFiles('apps/web/package-lock.json') }}
+
+      - name: Install web dependencies
+        if: steps.web-cache.outputs.cache-hit != 'true'
+        run: npm ci
+        working-directory: apps/web
+
+      - name: Build web
+        run: npm run build
+        working-directory: apps/web
+
+  docker-build:
+    name: Docker Compose build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build all Compose images
+        env:
+          DATABASE_URL: postgresql://taply_ci:taply_ci@postgres:5432/taply_ci?schema=public
+          JWT_SECRET: ci-jwt-secret
+          REFRESH_SECRET: ci-refresh-secret
+        run: |
+          cp .env.example .env
+          docker compose build

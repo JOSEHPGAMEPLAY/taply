@@ -1,7 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { PRISMA_CLIENT } from '../prisma/prisma.module.js';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto.js';
 

@@ -6,7 +6,7 @@ import { AppModule } from '../../app.module.js';
 /**
  * Pruebas de integración del módulo de NFC Tags.
  *
- * Verifica creación, listado, asignación y escaneo de etiquetas NFC.
+ * Verifica CRUD, asignación/desasignación y escaneo de etiquetas NFC.
  */
 describe('NFC Tags (E2E)', () => {
   let app: INestApplication;
@@ -80,6 +80,7 @@ describe('NFC Tags (E2E)', () => {
 
       expect(res.body).toHaveProperty('id');
       expect(res.body).toHaveProperty('token');
+      expect(res.body.status).toBe('INVENTORY');
       tagId = res.body.id;
     });
 
@@ -123,6 +124,7 @@ describe('NFC Tags (E2E)', () => {
         .expect(201);
 
       expect(res.body).toHaveProperty('id');
+      expect(res.body.status).toBe('ACTIVE');
     });
   });
 
@@ -134,6 +136,54 @@ describe('NFC Tags (E2E)', () => {
         .expect(201);
 
       expect(res.body).toHaveProperty('scanned');
+    });
+  });
+
+  describe('POST /nfc-tags/:id/unassign', () => {
+    it('debe desasignar una etiqueta y devolverla al inventario', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`${baseUrl}/${tagId}/unassign?businessId=${businessId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(201);
+
+      expect(res.body.id).toBe(tagId);
+      expect(res.body.status).toBe('INVENTORY');
+
+      const tagRes = await request(app.getHttpServer())
+        .get(`${baseUrl}/${tagId}?businessId=${businessId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(tagRes.body.status).toBe('INVENTORY');
+    });
+
+    it('debe rechazar una etiqueta que ya no tiene una asignación activa', async () => {
+      await request(app.getHttpServer())
+        .post(`${baseUrl}/${tagId}/unassign?businessId=${businessId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(400);
+    });
+  });
+
+  describe('DELETE /nfc-tags/:id', () => {
+    it('debe eliminar una etiqueta y dejar de encontrarla', async () => {
+      const createRes = await request(app.getHttpServer())
+        .post(`${baseUrl}?businessId=${businessId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({})
+        .expect(201);
+
+      const deleteRes = await request(app.getHttpServer())
+        .delete(`${baseUrl}/${createRes.body.id}?businessId=${businessId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(deleteRes.body.message).toBe('Etiqueta eliminada exitosamente');
+
+      await request(app.getHttpServer())
+        .get(`${baseUrl}/${createRes.body.id}?businessId=${businessId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(404);
     });
   });
 });

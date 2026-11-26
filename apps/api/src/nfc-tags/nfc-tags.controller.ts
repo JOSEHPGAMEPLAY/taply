@@ -1,4 +1,4 @@
-﻿import { Controller, Post, Get, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+﻿import { Controller, Delete, Post, Get, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { NfcTagsService } from './nfc-tags.service.js';
 import { CreateNfcTagDto } from './dto/create-nfc-tag.dto.js';
@@ -16,7 +16,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
  * - POST /nfc-tags?businessId=<uuid> - Crear etiqueta
  * - GET /nfc-tags?businessId=<uuid> - Listar etiquetas
  * - GET /nfc-tags/:id?businessId=<uuid> - Obtener etiqueta
+ * - DELETE /nfc-tags/:id?businessId=<uuid> - Eliminar etiqueta
  * - POST /nfc-tags/:id/assign?businessId=<uuid> - Asignar a página
+ * - POST /nfc-tags/:id/unassign?businessId=<uuid> - Desasignar de página
  * - POST /nfc-tags/:id/scan - Registrar escaneo
  */
 @ApiTags('NFC Tags')
@@ -53,6 +55,16 @@ export class NfcTagsController {
     return this.nfcTagsService.findOne(businessId, id);
   }
 
+  @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar etiqueta NFC' })
+  @ApiQuery({ name: 'businessId', required: true, type: String, description: 'ID del negocio' })
+  @ApiResponse({ status: 200, description: 'Etiqueta eliminada' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Etiqueta no encontrada' })
+  async remove(@Param('id') id: string, @Query('businessId') businessId: string) {
+    return this.nfcTagsService.remove(businessId, id);
+  }
+
   @Post(':id/assign')
   @ApiOperation({ summary: 'Asignar etiqueta a página', description: 'Asigna una etiqueta NFC a una página. Requiere businessId como query param.' })
   @ApiQuery({ name: 'businessId', required: true, type: String, description: 'ID del negocio' })
@@ -61,6 +73,17 @@ export class NfcTagsController {
   @ApiResponse({ status: 404, description: 'Etiqueta o página no encontrada' })
   async assign(@Param('id') id: string, @Body() dto: AssignTagDto, @Query('businessId') businessId: string) {
     return this.nfcTagsService.assign(businessId, id, dto);
+  }
+
+  @Post(':id/unassign')
+  @ApiOperation({ summary: 'Desasignar etiqueta de una página' })
+  @ApiQuery({ name: 'businessId', required: true, type: String, description: 'ID del negocio' })
+  @ApiResponse({ status: 201, description: 'Etiqueta desasignada y devuelta al inventario' })
+  @ApiResponse({ status: 400, description: 'La etiqueta no tiene una asignación activa' })
+  @ApiResponse({ status: 403, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Etiqueta no encontrada' })
+  async unassign(@Param('id') id: string, @Query('businessId') businessId: string) {
+    return this.nfcTagsService.unassign(businessId, id);
   }
 
   @Post(':id/scan')

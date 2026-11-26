@@ -346,6 +346,24 @@ export const api = {
   },
 
   /**
+   * POST /nfc-tags/:id/unassign?businessId=<uuid> (requiere JWT)
+   * Devuelve la etiqueta al inventario y finaliza su asignación activa.
+   */
+  async unassignTag(tagId: string, businessId: string) {
+    return apiRequest<{ id: string; token: string; status: string; businessId: string }>(
+      'POST',
+      `/nfc-tags/${tagId}/unassign?businessId=${businessId}`
+    );
+  },
+
+  /**
+   * DELETE /nfc-tags/:id?businessId=<uuid> (requiere JWT)
+   */
+  async deleteNfcTag(tagId: string, businessId: string) {
+    return apiRequest<{ message: string }>('DELETE', `/nfc-tags/${tagId}?businessId=${businessId}`);
+  },
+
+  /**
    * POST /nfc-tags/:id/scan (requiere JWT)
    * Response: Escaneo registrado
    */
@@ -418,17 +436,6 @@ export const api = {
       business: { id: string; name: string; description: string };
       publishedVersion: { config: any; buttons: Array<{ key: string; label: string; url: string; icon?: string }> };
     }>('GET', `/public/pages/${slug}`);
-  },
-
-  /**
-   * Actualiza el estado de un negocio.
-   */
-  async updateBusinessStatus(id: string, status: string) {
-    return apiRequest<{ id: string; name: string; slug: string; description?: string; status: string; ownerId: string; createdAt: string; updatedAt: string }>(
-      'PATCH',
-      `/businesses/${id}`,
-      { status }
-    );
   },
 
   /**
